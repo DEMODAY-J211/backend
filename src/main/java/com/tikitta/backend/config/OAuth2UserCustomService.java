@@ -44,14 +44,23 @@ public class OAuth2UserCustomService extends DefaultOAuth2UserService {
         String selectedRole = (String) session.getAttribute("selectedRole");
 
         KakaoOauth user = kakaoOauthRepository.findByEmail(email)
-                .map(entity -> entity.update(name))
-                .orElse(KakaoOauth.builder()
-                        .email(email)
-                        .name(name)
-                        .role(selectedRole != null
-                                ? DomainEnums.Role.valueOf(selectedRole)
-                                : DomainEnums.Role.USER)
-                        .build());
+                .map(entity -> {
+                    // ✅ 기존 회원일 경우: isSignup을 false로 설정 (또는 설정 안 함)
+                    session.setAttribute("isSignup", false);
+                    return entity.update(name);
+                })
+                .orElseGet(() -> {
+                    // ✅ 신규 회원일 경우: isSignup을 true로 설정
+                    session.setAttribute("isSignup", true);
+
+                    return KakaoOauth.builder()
+                            .email(email)
+                            .name(name)
+                            .role(selectedRole != null
+                                    ? DomainEnums.Role.valueOf(selectedRole)
+                                    : DomainEnums.Role.USER)
+                            .build();
+                });
 
         return kakaoOauthRepository.save(user);
     }

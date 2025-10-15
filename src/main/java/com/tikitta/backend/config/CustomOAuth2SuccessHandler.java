@@ -32,7 +32,7 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
         KakaoOauth user = kakaoOauthRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("회원 정보를 찾을 수 없습니다."));
 
-        // 🔹 세션에서 role / signup 여부 가져오기
+        // 🔹 세션에서 값 가져오기
         HttpSession session = request.getSession(false);
         String selectedRole = null;
         Boolean isSignup = false;
@@ -44,19 +44,20 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
 
         // 🔹 최종 리다이렉트 경로
         String redirectUrl = "/auth/kakao/signup"; // 기본값
+        String prevUrl = (session != null) ? (String) session.getAttribute("prevUrl") : null;
 
         // ✅ [회원가입 플로우]
         if (Boolean.TRUE.equals(isSignup)) {
             if ("MANAGER".equalsIgnoreCase(selectedRole)) {
                 redirectUrl = "/auth/kakao/manager";
             } else if ("USER".equalsIgnoreCase(selectedRole)) {
-                redirectUrl = "/auth/kakao/user";
+                redirectUrl = prevUrl;
+                session.removeAttribute("prevUrl");
             }
         }
 
         // ✅ [로그인 플로우]
         else {
-            String prevUrl = (session != null) ? (String) session.getAttribute("prevUrl") : null;
             if (prevUrl != null) {
                 redirectUrl = prevUrl;
                 session.removeAttribute("prevUrl");
