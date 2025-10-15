@@ -44,8 +44,13 @@ public class KakaoOauth {
     @Column(name = "oauth_visited", nullable = false)
     private DomainEnums.VisitedPath visitedPath;
 
+    @Column(name = "oauth_email")
+    private String email;
+
     @Builder
-    public KakaoOauth(Long kakaoId, String name, DomainEnums.Gender gender, Integer age, String phone, DomainEnums.Role role, LocalDateTime createdAt, DomainEnums.VisitedPath visitedPath) {
+    public KakaoOauth(Long kakaoId, String name, DomainEnums.Gender gender, Integer age,
+                      String phone, DomainEnums.Role role, LocalDateTime createdAt,
+                      DomainEnums.VisitedPath visitedPath, String email) {
         this.kakaoId = kakaoId;
         this.name = name;
         this.gender = gender;
@@ -54,5 +59,11 @@ public class KakaoOauth {
         this.role = role != null ? role : DomainEnums.Role.USER; // 기본값 USER
         this.createdAt = createdAt;
         this.visitedPath = visitedPath;
+        this.email = email;
+    }
+
+    public KakaoOauth update(String name) {
+        this.name = name;
+        return this;
     }
 }
