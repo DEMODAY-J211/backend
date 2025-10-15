@@ -51,8 +51,9 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
             if ("MANAGER".equalsIgnoreCase(selectedRole)) {
                 redirectUrl = "/auth/kakao/manager";
             } else if ("USER".equalsIgnoreCase(selectedRole)) {
-                redirectUrl = prevUrl;
-                session.removeAttribute("prevUrl");
+                redirectUrl = (prevUrl != null) ? prevUrl : "/user/main";
+                if(prevUrl != null) {
+                    session.removeAttribute("prevUrl");
             }
         }
 
@@ -78,5 +79,6 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
         // 🔹 리다이렉트 실행
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
     }
+}
 }
 
