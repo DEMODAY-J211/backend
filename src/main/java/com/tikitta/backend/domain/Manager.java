@@ -1,17 +1,17 @@
 package com.tikitta.backend.domain;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 @Table(name = "manager")
+@Builder
 public class Manager {
 
     @Id
@@ -38,6 +38,7 @@ public class Manager {
     @ElementCollection
     @CollectionTable(name = "manager_urls", joinColumns = @JoinColumn(name = "manager_id"))
     @Column(name = "url")
+    @Builder.Default
     private List<String> urls = new ArrayList<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -48,12 +49,15 @@ public class Manager {
     )
     private List<Location> likedLocations = new ArrayList<>();
 
-    @Builder
-    public Manager(KakaoOauth kakaoOauth, String name, String pictureUrl, String introduction, String description) {
-        this.kakaoOauth = kakaoOauth;
-        this.name = name;
-        this.pictureUrl = pictureUrl;
-        this.introduction = introduction;
-        this.description = description;
-    }
+    // url을 리스트로 한번에 빌드하기 위해 빌더를 클래스 밖으로 뺐음
+
+//    @Builder
+//    public Manager(KakaoOauth kakaoOauth, String name, String pictureUrl, String introduction, String description) {
+//        this.kakaoOauth = kakaoOauth;
+//        this.name = name;
+//        this.pictureUrl = pictureUrl;
+//        this.introduction = introduction;
+//        this.description = description;
+//        this.urls = new ArrayList<>();
+//    }
 }

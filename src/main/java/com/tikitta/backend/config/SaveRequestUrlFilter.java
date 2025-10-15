@@ -37,7 +37,7 @@ public class SaveRequestUrlFilter implements Filter {
 
         // 로그인 안 된 상태에서 /user/main 으로 접근한 경우 URL 저장
         String uri = httpRequest.getRequestURI();
-        if (!isAuthenticated && uri.startsWith("/user/main")) {
+        if (!isAuthenticated && uri.startsWith("/user/")) {
             session.setAttribute("prevUrl", uri);
         }
 
