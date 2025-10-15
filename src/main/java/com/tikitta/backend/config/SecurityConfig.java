@@ -22,6 +22,7 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**", "/oauth/**", "/login/**").permitAll()
+                        .requestMatchers("/manager/**").hasRole("MANAGER")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(new SaveRequestUrlFilter(), UsernamePasswordAuthenticationFilter.class)
