@@ -1,6 +1,7 @@
 package com.tikitta.backend.controller;
 
 import com.tikitta.backend.dto.ApiResponse;
+import com.tikitta.backend.dto.ShowDetailResponse;
 import com.tikitta.backend.dto.ShowListResponse;
 import com.tikitta.backend.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -18,12 +19,18 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/main")
-    public ResponseEntity<ApiResponse<ShowListResponse>> getMainPage(@PathVariable("managerId") Long managerId){
+    public ResponseEntity<ApiResponse<ShowListResponse>> getMainPage(@PathVariable Long managerId){
 
         // 1. Service를 호출하여 DTO 데이터 받기
         ShowListResponse data = userService.getUserMainPage(managerId);
 
         // 2. ApiResponse 래퍼로 감싸서 반환
+        return ResponseEntity.ok(new ApiResponse<>(data));
+    }
+
+    @GetMapping("/deatil/{showId}")
+    public ResponseEntity<ApiResponse<ShowDetailResponse>> getShowDetail(@PathVariable Long managerId, @PathVariable Long showId){
+        ShowDetailResponse data = userService.getShowDetail(showId);
         return ResponseEntity.ok(new ApiResponse<>(data));
     }
 }

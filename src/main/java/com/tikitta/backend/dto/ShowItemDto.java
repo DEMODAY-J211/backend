@@ -6,11 +6,10 @@ import com.tikitta.backend.domain.Shows;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 
 @Getter
-public class ShowItemResponse {
+public class ShowItemDto {
     private Long showId;
     private String showTitle;
     private LocalDateTime showTimes;
@@ -18,7 +17,7 @@ public class ShowItemResponse {
     private String showPosterPicture;
     private boolean isReservable;
 
-    public ShowItemResponse(Shows show){
+    public ShowItemDto(Shows show){
         this.showId = show.getId();
         this.showTitle = show.getTitle();
         this.showPosterPicture = show.getPosterUrl();
