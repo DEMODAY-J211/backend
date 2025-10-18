@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -14,9 +13,9 @@ import java.util.List;
 public class ShowListResponse {
     private Long managerId;
     private String managerName;
-    private List<ShowItemResponse> showList;
+    private List<ShowItemDto> showList;
 
-    public ShowListResponse(Manager manager, List<ShowItemResponse> showList) {
+    public ShowListResponse(Manager manager, List<ShowItemDto> showList) {
         this.managerId = manager.getId();
         this.managerName = manager.getName();
         this.showList = showList;
