@@ -1,7 +1,9 @@
 package com.tikitta.backend.dto;
 
+import com.tikitta.backend.domain.Manager;
 import com.tikitta.backend.domain.ShowTime;
 import com.tikitta.backend.domain.Shows;
+import com.tikitta.backend.domain.TicketOption;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
@@ -44,5 +46,38 @@ public class ShowDetailResponse {
                 .collect(Collectors.toList());
 
         this.managerInfo = new ManagerInfoDto(show.getManager());
+    }
+
+    @Getter
+    private static class ShowTimeDto {
+        private Long showtimeId;
+        private LocalDateTime showtimeStart;
+
+        public ShowTimeDto(ShowTime showTime) {
+            this.showtimeId = showTime.getId();
+            this.showtimeStart = showTime.getStartAt();
+        }
+    }
+
+    @Getter
+    private static class TicketOptionDto {
+        private String ticketoptionName;
+        private Integer ticketoptionPrice;
+
+        public TicketOptionDto(TicketOption ticketOption) {
+            this.ticketoptionName = ticketOption.getName();
+            this.ticketoptionPrice = ticketOption.getPrice();
+        }
+    }
+
+    @Getter
+    private static class ManagerInfoDto {
+        private String managerName;
+        private String managerEmail; // ◀ JSON 예시와 다르지만, 기존 코드를 따름
+
+        public ManagerInfoDto(Manager manager) {
+            this.managerName = manager.getName();
+            this.managerEmail = manager.getKakaoOauth().getEmail();
+        }
     }
 }
