@@ -16,8 +16,6 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/auth/kakao")
 public class AuthController {
 
-    private final KakaoOauthRepository kakaoOauthRepository;
-    private final ManagerRepository managerRepository;
     private final AuthService authService;
 
     @PostMapping("/select-role")

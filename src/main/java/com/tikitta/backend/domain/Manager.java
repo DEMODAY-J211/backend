@@ -47,6 +47,8 @@ public class Manager {
             joinColumns = @JoinColumn(name = "manager_id"),
             inverseJoinColumns = @JoinColumn(name = "location_id")
     )
+
+    @Builder.Default
     private List<Location> likedLocations = new ArrayList<>();
 
     // url을 리스트로 한번에 빌드하기 위해 빌더를 클래스 밖으로 뺐음
