@@ -1,6 +1,8 @@
 package com.tikitta.backend.controller;
 
-import com.tikitta.backend.repository.ManagerRepository;
+import com.tikitta.backend.dto.ApiResponse;
+import com.tikitta.backend.dto.ShowListResponse;
+import com.tikitta.backend.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,13 +12,18 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/user")
+@RequestMapping("/user/{managerId}")
 public class UserController {
 
-    private final ManagerRepository managerRepository;
+    private final UserService userService;
 
-    @GetMapping("/{managerId}/main")
-    public ResponseEntity<String> getMainPage(@PathVariable("managerId") Long managerId){
-        return ResponseEntity.ok("생성 성공");
+    @GetMapping("/main")
+    public ResponseEntity<ApiResponse<ShowListResponse>> getMainPage(@PathVariable("managerId") Long managerId){
+
+        // 1. Service를 호출하여 DTO 데이터 받기
+        ShowListResponse data = userService.getUserMainPage(managerId);
+
+        // 2. ApiResponse 래퍼로 감싸서 반환
+        return ResponseEntity.ok(new ApiResponse<>(data));
     }
 }
