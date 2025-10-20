@@ -37,7 +37,7 @@ public class ShowDetailResponse {
         this.showStartDate = earliest.getStartAt();
         this.showtimeEndDate = latest.getStartAt();
 
-        show.getShowTimes().stream()
+        this.showtimeList = show.getShowTimes().stream()
                 .map(ShowTimeDto::new)
                 .collect(Collectors.toList());
 

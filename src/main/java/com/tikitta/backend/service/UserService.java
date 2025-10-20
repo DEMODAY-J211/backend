@@ -2,6 +2,7 @@ package com.tikitta.backend.service;
 
 import com.tikitta.backend.domain.Manager;
 import com.tikitta.backend.domain.Shows;
+import com.tikitta.backend.dto.ManagerOrgResponse;
 import com.tikitta.backend.dto.ShowDetailResponse;
 import com.tikitta.backend.dto.ShowItemDto;
 import com.tikitta.backend.dto.ShowListResponse;
@@ -43,5 +44,14 @@ public class UserService {
         Shows show = showsRepository.findById(showId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 공연입니다. ID: " + showId));
         return new ShowDetailResponse(show);
+    }
+
+    public ManagerOrgResponse getManagerOrg(Long managerId){
+        // 1. managerId로 Manager 엔티티 조회
+        Manager manager = managerRepository.findById(managerId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 매니저입니다. ID: " + managerId));
+
+        // 2. DTO로 변환하여 반환
+        return new ManagerOrgResponse(manager);
     }
 }
