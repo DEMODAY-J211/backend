@@ -8,7 +8,7 @@ import com.tikitta.backend.dto.ShowItemDto;
 import com.tikitta.backend.dto.ShowListResponse;
 import com.tikitta.backend.repository.ManagerRepository;
 import com.tikitta.backend.repository.ShowsRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class UserService {
 
     private final ManagerRepository managerRepository;
