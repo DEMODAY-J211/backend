@@ -119,60 +119,85 @@ public class DataInitializer implements CommandLineRunner {
                 .build();
         messageRepository.save(testMessage);
 
-        ShowTime testShowTime = ShowTime.builder()
+        ShowTime showTime1 = ShowTime.builder()
                 .show(testShow)
                 .startAt(LocalDateTime.now().plusDays(10).withHour(19).withMinute(0))
                 .endAt(LocalDateTime.now().plusDays(10).withHour(21).withMinute(0))
                 .bookingEndAt(LocalDateTime.now().plusDays(9))
                 .build();
-        showTimeRepository.save(testShowTime);
+        ShowTime showTime2 = ShowTime.builder()
+                .show(testShow)
+                .startAt(LocalDateTime.now().plusDays(11).withHour(15).withMinute(0)) // 11일 뒤 15:00
+                .endAt(LocalDateTime.now().plusDays(11).withHour(17).withMinute(0))
+                .bookingEndAt(LocalDateTime.now().plusDays(10))
+                .build();
+        showTimeRepository.saveAll(List.of(showTime1, showTime2)); // ◀ saveAll 사용
 
         TicketOption rSeat = TicketOption.builder()
                 .show(testShow)
                 .name("R석")
-                .quantity(50)
+                .quantity(50) // 총 50매 (모든 회차 공유)
                 .price(50000)
                 .build();
-        ticketOptionRepository.save(rSeat);
+        TicketOption sSeat = TicketOption.builder()
+                .show(testShow)
+                .name("S석")
+                .quantity(50) // 총 50매 (모든 회차 공유)
+                .price(40000)
+                .build();
+        ticketOptionRepository.saveAll(List.of(rSeat, sSeat)); // ◀ saveAll 사용
 
-        // 🚨 [변경] ShowSeat가 Show가 아닌 ShowTime에 연결
-        ShowSeat showSeatA1 = ShowSeat.builder()
-                .showTime(testShowTime) // ◀ show(testShow) -> showTime(testShowTime)
+        // --- 👇 [수정] ShowSeat를 각 회차에 맞게 생성 ---
+        // 회차 1 (showTime1)의 좌석 A1, A2
+        ShowSeat st1_seatA1 = ShowSeat.builder()
+                .showTime(showTime1) // ◀ 회차 1에 연결
                 .seat(seatA1)
                 .isAvailable(true)
                 .build();
-        ShowSeat showSeatA2 = ShowSeat.builder()
-                .showTime(testShowTime) // ◀ show(testShow) -> showTime(testShowTime)
+        ShowSeat st1_seatA2 = ShowSeat.builder()
+                .showTime(showTime1) // ◀ 회차 1에 연결
                 .seat(seatA2)
                 .isAvailable(true)
                 .build();
-        showSeatRepository.saveAll(List.of(showSeatA1, showSeatA2));
 
+        // 회차 2 (showTime2)의 좌석 A1, A2
+        ShowSeat st2_seatA1 = ShowSeat.builder()
+                .showTime(showTime2) // ◀ 회차 2에 연결
+                .seat(seatA1)
+                .isAvailable(true)
+                .build();
+        ShowSeat st2_seatA2 = ShowSeat.builder()
+                .showTime(showTime2) // ◀ 회차 2에 연결
+                .seat(seatA2)
+                .isAvailable(true)
+                .build();
+        showSeatRepository.saveAll(List.of(st1_seatA1, st1_seatA2, st2_seatA1, st2_seatA2));
+
+        // --- 👇 [수정] Reservation 및 ReservationItem을 회차 1에만 연결 ---
         Reservation testReservation = Reservation.builder()
                 .user(userOauth)
-                .showTime(testShowTime)
+                .showTime(showTime1) // ◀ 회차 1에 예매
                 .quantity(2)
-                .totalPrice(100000)
+                .totalPrice(100000) // R석 가격 * 2
                 .refundAccountNumber("987-654-321 (테스트유저)")
                 .status(DomainEnums.ReservationStatus.CONFIRMED)
                 .createdAt(LocalDateTime.now())
                 .build();
         reservationRepository.save(testReservation);
 
-        // 🚨 [변경] ReservationItem이 Seat이 아닌 ShowSeat에 연결
         ReservationItem item1 = ReservationItem.builder()
                 .reservation(testReservation)
-                .showSeat(showSeatA1) // ◀ seat(seatA1) -> showSeat(showSeatA1)
+                .showSeat(st1_seatA1) // ◀ 회차 1의 A1 좌석
                 .build();
         ReservationItem item2 = ReservationItem.builder()
                 .reservation(testReservation)
-                .showSeat(showSeatA2) // ◀ seat(seatA2) -> showSeat(showSeatA2)
+                .showSeat(st1_seatA2) // ◀ 회차 1의 A2 좌석
                 .build();
         reservationItemRepository.saveAll(List.of(item1, item2));
 
         // 🚨 [추가] 예매된 좌석(A1, A2)을 Not Available로 변경
-        showSeatA1.reserve();
-        showSeatA2.reserve();
+        st1_seatA1.reserve();
+        st1_seatA2.reserve();
 
         System.out.println("--- 테스트 데이터 생성 완료! ---");
     }

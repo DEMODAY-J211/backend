@@ -22,7 +22,9 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**", "/oauth/**", "/login/**",
-                                "/user/*/main","/user/*/detail","/user/*/organization").permitAll()
+                                "/user/*/main","/user/*/detail","/user/*/organization",
+                                //이 밑으로는 테스트용 url 추가
+                                "/user/*/booking/*/reserveInfo").permitAll()
                         .requestMatchers("/manager/**").hasRole("MANAGER")
                         .anyRequest().authenticated()
                 )

@@ -5,7 +5,6 @@ import com.tikitta.backend.dto.BookingInfoResponse;
 import com.tikitta.backend.repository.ReservationRepository;
 import com.tikitta.backend.repository.ShowSeatRepository;
 import com.tikitta.backend.repository.ShowsRepository;
-import com.tikitta.backend.repository.TicketOptionRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
