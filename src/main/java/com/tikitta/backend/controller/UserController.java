@@ -1,6 +1,7 @@
 package com.tikitta.backend.controller;
 
 import com.tikitta.backend.dto.ApiResponse;
+import com.tikitta.backend.dto.ManagerOrgResponse;
 import com.tikitta.backend.dto.ShowDetailResponse;
 import com.tikitta.backend.dto.ShowListResponse;
 import com.tikitta.backend.service.UserService;
@@ -28,9 +29,15 @@ public class UserController {
         return ResponseEntity.ok(new ApiResponse<>(data));
     }
 
-    @GetMapping("/deatil/{showId}")
+    @GetMapping("/detail/{showId}")
     public ResponseEntity<ApiResponse<ShowDetailResponse>> getShowDetail(@PathVariable Long managerId, @PathVariable Long showId){
         ShowDetailResponse data = userService.getShowDetail(showId);
+        return ResponseEntity.ok(new ApiResponse<>(data));
+    }
+
+    @GetMapping("/organization")
+    public ResponseEntity<ApiResponse<ManagerOrgResponse>> getOrganization(@PathVariable Long managerId){
+        ManagerOrgResponse data = userService.getManagerOrg(managerId);
         return ResponseEntity.ok(new ApiResponse<>(data));
     }
 }
