@@ -135,13 +135,14 @@ public class DataInitializer implements CommandLineRunner {
                 .build();
         ticketOptionRepository.save(rSeat);
 
+        // 🚨 [변경] ShowSeat가 Show가 아닌 ShowTime에 연결
         ShowSeat showSeatA1 = ShowSeat.builder()
-                .show(testShow)
+                .showTime(testShowTime) // ◀ show(testShow) -> showTime(testShowTime)
                 .seat(seatA1)
                 .isAvailable(true)
                 .build();
         ShowSeat showSeatA2 = ShowSeat.builder()
-                .show(testShow)
+                .showTime(testShowTime) // ◀ show(testShow) -> showTime(testShowTime)
                 .seat(seatA2)
                 .isAvailable(true)
                 .build();
@@ -158,15 +159,20 @@ public class DataInitializer implements CommandLineRunner {
                 .build();
         reservationRepository.save(testReservation);
 
+        // 🚨 [변경] ReservationItem이 Seat이 아닌 ShowSeat에 연결
         ReservationItem item1 = ReservationItem.builder()
                 .reservation(testReservation)
-                .seat(seatA1)
+                .showSeat(showSeatA1) // ◀ seat(seatA1) -> showSeat(showSeatA1)
                 .build();
         ReservationItem item2 = ReservationItem.builder()
                 .reservation(testReservation)
-                .seat(seatA2)
+                .showSeat(showSeatA2) // ◀ seat(seatA2) -> showSeat(showSeatA2)
                 .build();
         reservationItemRepository.saveAll(List.of(item1, item2));
+
+        // 🚨 [추가] 예매된 좌석(A1, A2)을 Not Available로 변경
+        showSeatA1.reserve();
+        showSeatA2.reserve();
 
         System.out.println("--- 테스트 데이터 생성 완료! ---");
     }

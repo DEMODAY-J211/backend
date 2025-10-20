@@ -23,8 +23,8 @@ public class ReservationItem {//개별티켓
 
     // 좌석제 공연일 경우에만 값이 존재
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "seat_id")
-    private Seat seat;
+    @JoinColumn(name = "show_seat_id")
+    private ShowSeat showSeat;
 
     // 스탠딩 공연일 경우에만 값이 존재
     @Column(name = "reservation_entry_number")
@@ -40,9 +40,9 @@ public class ReservationItem {//개별티켓
     private boolean isEntered = false;
 
     @Builder
-    public ReservationItem(Reservation reservation, Seat seat, Integer entryNumber, String qrCodeUrl) {
+    public ReservationItem(Reservation reservation, ShowSeat showSeat, Integer entryNumber, String qrCodeUrl) {
         this.reservation = reservation;
-        this.seat = seat;
+        this.showSeat = showSeat;
         this.entryNumber = entryNumber;
         this.qrCodeUrl = qrCodeUrl;
     }
