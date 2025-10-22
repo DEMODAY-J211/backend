@@ -57,9 +57,10 @@ public class UserBookingService {
         // 2. 스탠딩 공연일 경우 (수량 계산)
         else if (type == DomainEnums.LocationType.STANDING) {
             // 2-1. 이 공연의 총 티켓 수량 (모든 회차가 공유한다고 가정)
-            int totalQuantity = show.getTicketOptions().stream()
-                    .mapToInt(TicketOption::getQuantity)
-                    .sum();
+            Integer totalQuantity = showTime.getTotalStandingQuantity();
+            if (totalQuantity == null || totalQuantity == 0) {
+                return 0; // 스탠딩 공연인데 수량이 0이면 판매 불가
+            }
 
             // 2-2. "이 회차"에 예매된 티켓 수량 (Reservation의 quantity)
             List<Reservation> reservations = reservationRepository.findByShowTimeAndStatusIn(showTime, activeStatuses);

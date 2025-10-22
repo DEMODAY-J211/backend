@@ -31,11 +31,15 @@ public class ShowTime {
     @Column(name = "show_time_online_book_end", nullable = false)
     private LocalDateTime bookingEndAt;
 
+    @Column(name = "show_time_standing_quantity")
+    private Integer totalStandingQuantity;
+
     @Builder
-    public ShowTime(Shows show, LocalDateTime startAt, LocalDateTime endAt, LocalDateTime bookingEndAt) {
+    public ShowTime(Shows show, LocalDateTime startAt, LocalDateTime endAt, LocalDateTime bookingEndAt,  Integer totalStandingQuantity) {
         this.show = show;
         this.startAt = startAt;
         this.endAt = endAt;
         this.bookingEndAt = bookingEndAt;
+        this.totalStandingQuantity = totalStandingQuantity;
     }
 }

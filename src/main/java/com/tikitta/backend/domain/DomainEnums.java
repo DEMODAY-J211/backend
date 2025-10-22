@@ -45,7 +45,7 @@ public final class DomainEnums {
      * 좌석 판매 방법 (미지정 / 스케줄링)
      */
     public enum SaleMethod {// 순서대로 공연자맘대로/스케쥴링/스탠딩/예매자선택
-        Event_Host, SCHEDULING, STANDING,Select_by_User
+        Event_Host, SCHEDULING, STANDING, Select_by_User
     }
 
     /**
