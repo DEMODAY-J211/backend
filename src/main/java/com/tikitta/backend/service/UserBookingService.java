@@ -11,6 +11,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -98,6 +99,8 @@ public class UserBookingService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 공연 회차입니다."));
         Shows show = showTime.getShow();
 
+        String newReservationNumber = generateReservationNumber(show.getSaleMethod(), user);
+
         // 3. Reservation 엔티티 생성 및 저장
         Reservation reservation = Reservation.builder()
                 .user(user)
@@ -151,5 +154,27 @@ public class UserBookingService {
         reservationItemRepository.saveAll(items); // 생성된 Item들 저장
 
         return reservation; // 생성된 예매 정보 반환 (ID 등 확인용)
+    }
+
+    /**
+     * 예매 번호 생성 헬퍼 메소드 (알파벳2 + yymmddHHmm + userId)
+     */
+    private String generateReservationNumber(DomainEnums.SaleMethod saleMethod, KakaoOauth user) {
+        // 1. SaleMethod에 따른 접두사 결정
+        String prefix = switch (saleMethod) {
+            case Event_Host -> "EH";
+            case SCHEDULING -> "SD";
+            case STANDING -> "ST";
+            case Select_by_User -> "US";
+            default -> "XX"; // 예외 처리 또는 기본값
+        };
+
+        // 2. 현재 날짜와 시간 (yyMMddHHmm 형식)
+        String dateTimePart = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMddHHmm"));
+
+        // 3. 사용자 ID (KakaoOauth의 Long id 사용)
+        String userIdPart = String.valueOf(user.getId());
+
+        return prefix + dateTimePart + userIdPart; // 예: "US2510222015" + "1" -> "US25102220151"
     }
 }
