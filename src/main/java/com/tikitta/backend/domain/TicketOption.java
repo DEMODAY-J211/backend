@@ -27,18 +27,18 @@ public class TicketOption {
     @Column(name = "ticket_option_detail")
     private String description;
 
-    @Column(name = "ticket_option_count", nullable = false)
-    private Integer quantity;
+//    @Column(name = "ticket_option_count", nullable = false)
+//    private Integer quantity;
 
     @Column(name = "ticket_option_price", nullable = false)
     private Integer price;
 
     @Builder
-    public TicketOption(Shows show, String name, String description, Integer quantity, Integer price) {
+    public TicketOption(Shows show, String name, String description, Integer price) {
         this.show = show;
         this.name = name;
         this.description = description;
-        this.quantity = quantity;
+        //this.quantity = quantity;
         this.price = price;
     }
 }

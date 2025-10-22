@@ -136,13 +136,13 @@ public class DataInitializer implements CommandLineRunner {
         TicketOption rSeat = TicketOption.builder()
                 .show(testShow)
                 .name("R석")
-                .quantity(50) // 총 50매 (모든 회차 공유)
+             //   .quantity(50) // 총 50매 (모든 회차 공유)
                 .price(50000)
                 .build();
         TicketOption sSeat = TicketOption.builder()
                 .show(testShow)
                 .name("S석")
-                .quantity(50) // 총 50매 (모든 회차 공유)
+              //  .quantity(50) // 총 50매 (모든 회차 공유)
                 .price(40000)
                 .build();
         ticketOptionRepository.saveAll(List.of(rSeat, sSeat)); // ◀ saveAll 사용

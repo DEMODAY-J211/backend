@@ -20,12 +20,14 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                .csrf(AbstractHttpConfigurer::disable) //테스트용으로 추가
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**", "/oauth/**", "/login/**",
-                                "/user/*/main","/user/*/detail","/user/*/organization",
-                                //이 밑으로는 테스트용 url 추가
-                                "/user/*/booking/*/reserveInfo").permitAll()
+                              //  "/user/*/main","/user/*/detail/*","/user/*/organization",
+                                //이 밑으로는 테스트용 url
+                                "/user/**").permitAll()
                         .requestMatchers("/manager/**").hasRole("MANAGER")
+                       // .requestMatchers("/user/*/booking/").hasRole("USER")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(new SaveRequestUrlFilter(), UsernamePasswordAuthenticationFilter.class)
