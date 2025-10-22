@@ -14,7 +14,6 @@ import com.tikitta.backend.dto.*;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
@@ -140,5 +139,17 @@ public class UserBookingController {
 
         // 4. 생성된 예매 ID 반환
         return ResponseEntity.ok(new ApiResponse<>(reservationId));
+    }
+
+    @GetMapping("/{reservationId}")
+    public ResponseEntity<ApiResponse<ReservationDetailResponse>> getReservationDetail(
+            @PathVariable Long reservationId,
+            Authentication authentication) { // ◀ 로그인 사용자 확인용
+
+        // 1. Service 호출
+        ReservationDetailResponse data = userBookingService.getReservationDetail(reservationId, authentication);
+
+        // 2. ApiResponse로 감싸서 반환
+        return ResponseEntity.ok(new ApiResponse<>(data));
     }
 }

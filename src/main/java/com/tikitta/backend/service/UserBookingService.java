@@ -3,6 +3,7 @@ package com.tikitta.backend.service;
 import com.tikitta.backend.domain.*;
 import com.tikitta.backend.dto.BookingDto;
 import com.tikitta.backend.dto.BookingInfoResponse;
+import com.tikitta.backend.dto.ReservationDetailResponse;
 import com.tikitta.backend.repository.*;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -176,5 +178,44 @@ public class UserBookingService {
         String userIdPart = String.valueOf(user.getId());
 
         return prefix + dateTimePart + userIdPart; // 예: "US2510222015" + "1" -> "US25102220151"
+    }
+
+    public ReservationDetailResponse getReservationDetail(Long reservationId, Authentication authentication) {
+
+        // 1. 예매 정보 조회 (Fetch Join으로 연관 엔티티 함께 로드)
+        Reservation reservation = reservationRepository.findByIdWithDetails(reservationId) // ◀ Repository에 새 메소드 필요
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 예매입니다. ID: " + reservationId));
+
+        // 2. 접근 권한 확인 (로그인한 사용자의 예매인지)
+        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+        String email = (String) oAuth2User.getAttributes().get("email");
+        if (!reservation.getUser().getEmail().equals(email)) {
+            throw new SecurityException("자신의 예매 내역만 조회할 수 있습니다.");
+        }
+
+
+        // 3. 예매 시 선택했던 티켓 옵션 정보 조회 (단순화: 첫 번째 아이템 기준으로 찾기 - 실제로는 더 정확한 방법 필요)
+        TicketOption selectedTicketOption = findTicketOptionForReservation(reservation);
+
+
+        // 4. DTO로 변환하여 반환
+        return new ReservationDetailResponse(reservation, selectedTicketOption);
+    }
+
+    /**
+     * [헬퍼 메소드 - 개선 필요] 예매에 사용된 티켓 옵션을 찾는 로직 (단순화 버전)
+     * 실제로는 ReservationItem에 ticketOptionId를 저장하거나,
+     * Reservation 생성 시 ticketOptionId를 저장하는 것이 더 정확합니다.
+     */
+    private TicketOption findTicketOptionForReservation(Reservation reservation) {
+        // 예시: 예매 총 금액과 수량으로 가격을 역산하여 티켓 옵션 추정
+        int pricePerTicket = reservation.getTotalPrice() / reservation.getQuantity();
+        Shows show = reservation.getShowTime().getShow();
+
+        // 해당 공연의 티켓 옵션 중 가격이 일치하는 첫 번째 옵션 반환 (부정확할 수 있음)
+        return show.getTicketOptions().stream()
+                .filter(option -> option.getPrice() == pricePerTicket)
+                .findFirst()
+                .orElse(null); // 못 찾으면 null 반환
     }
 }

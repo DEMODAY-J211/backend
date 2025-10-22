@@ -1,9 +1,6 @@
 package com.tikitta.backend.controller;
 
-import com.tikitta.backend.dto.ApiResponse;
-import com.tikitta.backend.dto.ManagerOrgResponse;
-import com.tikitta.backend.dto.ShowDetailResponse;
-import com.tikitta.backend.dto.ShowListResponse;
+import com.tikitta.backend.dto.*;
 import com.tikitta.backend.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -40,4 +37,5 @@ public class UserController {
         ManagerOrgResponse data = userService.getManagerOrg(managerId);
         return ResponseEntity.ok(new ApiResponse<>(data));
     }
+
 }
