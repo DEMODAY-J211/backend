@@ -175,6 +175,7 @@ public class DataInitializer implements CommandLineRunner {
 
         // --- 👇 [수정] Reservation 및 ReservationItem을 회차 1에만 연결 ---
         Reservation testReservation = Reservation.builder()
+                .reservationNumber("US25102220112")
                 .user(userOauth)
                 .showTime(showTime1) // ◀ 회차 1에 예매
                 .quantity(2)
@@ -201,4 +202,5 @@ public class DataInitializer implements CommandLineRunner {
 
         System.out.println("--- 테스트 데이터 생성 완료! ---");
     }
+
 }

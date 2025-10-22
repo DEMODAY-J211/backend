@@ -11,6 +11,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -47,38 +48,31 @@ public class UserBookingService {
     }
     private int calculateAvailableSeats(ShowTime showTime) {
         Shows show = showTime.getShow();
-        DomainEnums.LocationType type = show.getLocation().getType();
-
+        DomainEnums.SaleMethod saleMethod = show.getSaleMethod();
         // 예매 완료/대기중인 상태 목록
         List<DomainEnums.ReservationStatus> activeStatuses = List.of(
                 DomainEnums.ReservationStatus.CONFIRMED,
                 DomainEnums.ReservationStatus.PENDING_PAYMENT
         );
 
-        // 1. 좌석제 공연일 경우 (새로운 모델 적용)
-        if (type == DomainEnums.LocationType.SEATED) {
+        // 1. 좌석제-직접선택 공연일 경우 (새로운 모델 적용)
+        if (saleMethod == DomainEnums.SaleMethod.Select_by_User) {
             // "이 회차"에 할당된 좌석 중 "isAvailable = true"인 좌석 수
-            return showSeatRepository.countByShowTimeAndIsAvailable(showTime, true);
-        }
+            return showSeatRepository.countByShowTimeAndIsAvailable(showTime, true);        }
 
-        // 2. 스탠딩 공연일 경우 (수량 계산)
-        else if (type == DomainEnums.LocationType.STANDING) {
-            // 2-1. 이 공연의 총 티켓 수량 (모든 회차가 공유한다고 가정)
+        // 2. 그 외 (스탠딩, 스케줄링, 주최자선택) 공연일 경우 (수량 계산)
+        else {
             Integer totalQuantity = showTime.getTotalStandingQuantity();
-            if (totalQuantity == null || totalQuantity == 0) {
-                return 0; // 스탠딩 공연인데 수량이 0이면 판매 불가
+            if (totalQuantity == null || totalQuantity <= 0) {
+                return 0;
             }
-
-            // 2-2. "이 회차"에 예매된 티켓 수량 (Reservation의 quantity)
             List<Reservation> reservations = reservationRepository.findByShowTimeAndStatusIn(showTime, activeStatuses);
             int bookedQuantity = reservations.stream()
                     .mapToInt(Reservation::getQuantity)
                     .sum();
-
-            return totalQuantity - bookedQuantity;
+            return Math.max(0, totalQuantity - bookedQuantity); // 음수 방지
         }
 
-        return 0; // 그 외의 경우
     }
 
     //예매 총 가격 계산
@@ -105,6 +99,8 @@ public class UserBookingService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 공연 회차입니다."));
         Shows show = showTime.getShow();
 
+        String newReservationNumber = generateReservationNumber(show.getSaleMethod(), user);
+
         // 3. Reservation 엔티티 생성 및 저장
         Reservation reservation = Reservation.builder()
                 .user(user)
@@ -122,9 +118,8 @@ public class UserBookingService {
 
         List<ReservationItem> items = new ArrayList<>();
         // 4-1. 공연 유형 확인
-        DomainEnums.LocationType type = show.getLocation().getType();
-
-        if (type == DomainEnums.LocationType.SEATED) {
+        DomainEnums.SaleMethod saleMethod = show.getSaleMethod();
+        if (saleMethod == DomainEnums.SaleMethod.Select_by_User) {
             // --- 4-2. 좌석제 ---
             // TODO: sessionDto에서 selectedShowSeatIds를 꺼내 반복문으로 ShowSeat 상태 변경 및 Item 생성
             // List<Long> seatIds = sessionDto.getSelectedShowSeatIds();
@@ -138,7 +133,7 @@ public class UserBookingService {
             //     items.add(item);
             // }
 
-        } else if (type == DomainEnums.LocationType.STANDING) {
+        } else  {
             // --- 4-3. 스탠딩 ---
             // 4-3-1. 현재 회차의 마지막 입장 번호 조회
             Integer maxEntryNumber = reservationItemRepository.findMaxEntryNumberByShowTime(showTime);
@@ -159,5 +154,27 @@ public class UserBookingService {
         reservationItemRepository.saveAll(items); // 생성된 Item들 저장
 
         return reservation; // 생성된 예매 정보 반환 (ID 등 확인용)
+    }
+
+    /**
+     * 예매 번호 생성 헬퍼 메소드 (알파벳2 + yymmddHHmm + userId)
+     */
+    private String generateReservationNumber(DomainEnums.SaleMethod saleMethod, KakaoOauth user) {
+        // 1. SaleMethod에 따른 접두사 결정
+        String prefix = switch (saleMethod) {
+            case Event_Host -> "EH";
+            case SCHEDULING -> "SD";
+            case STANDING -> "ST";
+            case Select_by_User -> "US";
+            default -> "XX"; // 예외 처리 또는 기본값
+        };
+
+        // 2. 현재 날짜와 시간 (yyMMddHHmm 형식)
+        String dateTimePart = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMddHHmm"));
+
+        // 3. 사용자 ID (KakaoOauth의 Long id 사용)
+        String userIdPart = String.valueOf(user.getId());
+
+        return prefix + dateTimePart + userIdPart; // 예: "US2510222015" + "1" -> "US25102220151"
     }
 }
