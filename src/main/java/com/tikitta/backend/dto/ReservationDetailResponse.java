@@ -26,10 +26,11 @@ public class ReservationDetailResponse {
     private Integer totalAmount; // JSON 키 오타 수정 (totalAmount -> totalPrice)
     private RefundInfo refundInfo;
 
-    public ReservationDetailResponse(Reservation reservation, TicketOption selectedTicketOption) {
+    public ReservationDetailResponse(Reservation reservation) {
         ShowTime showTime = reservation.getShowTime();
         Shows show = showTime.getShow();
         KakaoOauth user = reservation.getUser();
+        TicketOption selectedTicketOption = reservation.getTicketOption();
 
         this.showTitle = show.getTitle();
         this.showPoster = show.getPosterUrl();
@@ -48,7 +49,6 @@ public class ReservationDetailResponse {
             this.ticketOptionName = selectedTicketOption.getName();
             this.price = selectedTicketOption.getPrice();
         } else {
-            // 예외 처리 또는 기본값 설정 (ReservationItem에서 찾아야 할 수도 있음)
             this.ticketOptionName = "정보 없음";
             this.price = 0;
         }
