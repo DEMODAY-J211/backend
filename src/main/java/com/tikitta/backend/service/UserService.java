@@ -21,8 +21,7 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final ManagerRepository managerRepository;
-    private final ShowsRepository showsR
-        epository;
+    private final ShowsRepository showsRepository;
 
     public ShowListResponse getUserMainPage(Long managerId){
 // 1. managerId로 Manager 엔티티 조회

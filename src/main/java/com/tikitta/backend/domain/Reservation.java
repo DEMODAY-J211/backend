@@ -31,6 +31,10 @@ public class Reservation {
     @JoinColumn(name = "show_time_id", nullable = false)
     private ShowTime showTime;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ticket_option_id", nullable = false)
+    private TicketOption ticketOption;
+
     @Column(name = "reservation_quantity", nullable = false)
     private Integer quantity;
 
@@ -51,10 +55,11 @@ public class Reservation {
     private List<ReservationItem> reservationItems = new ArrayList<>();
 
     @Builder
-    public Reservation(String reservationNumber, KakaoOauth user, ShowTime showTime, Integer quantity, Integer totalPrice, String refundAccountNumber, DomainEnums.ReservationStatus status, LocalDateTime createdAt) {
+    public Reservation(String reservationNumber, KakaoOauth user, ShowTime showTime, TicketOption ticketOption, Integer quantity, Integer totalPrice, String refundAccountNumber, DomainEnums.ReservationStatus status, LocalDateTime createdAt) {
         this.reservationNumber = reservationNumber;
         this.user = user;
         this.showTime = showTime;
+        this.ticketOption = ticketOption;
         this.quantity = quantity;
         this.totalPrice = totalPrice;
         this.refundAccountNumber = refundAccountNumber;
