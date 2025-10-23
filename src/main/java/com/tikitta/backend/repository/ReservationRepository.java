@@ -24,12 +24,25 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long> {
             "WHERE r.id = :reservationId")
     Optional<Reservation> findByIdWithDetails(@Param("reservationId") Long reservationId);
 
-    // ▼▼▼ 수정된 메소드 ▼▼▼
     @Query("SELECT r FROM Reservation r " +
             "JOIN FETCH r.user u " +
-            "JOIN FETCH r.ticketOption " + // 이제 이 JOIN이 정상적으로 동작합니다.
+            "JOIN FETCH r.ticketOption " +
             "WHERE r.showTime = :showTime " +
             "ORDER BY r.createdAt DESC")
     List<Reservation> findByShowTimeWithDetailsOrderByCreatedAtDesc(@Param("showTime") ShowTime showTime);
-    // ▲▲▲ 수정된 메소드 ▲▲▲
+
+    // ▼▼▼ 새로 추가된 검색 메소드 ▼▼▼
+    @Query("SELECT r FROM Reservation r " +
+            "JOIN FETCH r.user u " +
+            "JOIN FETCH r.ticketOption " +
+            "WHERE r.showTime = :showTime " +
+            "AND (u.name LIKE %:keyword% " +
+            "OR u.phone LIKE %:keyword% " +
+            "OR FUNCTION('CONCAT', '', u.id) LIKE %:keyword%) " + // 숫자 ID를 문자열처럼 검색
+            "ORDER BY r.createdAt DESC")
+    List<Reservation> findByShowTimeAndKeywordWithDetails(
+            @Param("showTime") ShowTime showTime,
+            @Param("keyword") String keyword
+    );
+    // ▲▲▲ 새로 추가된 검색 메소드 ▲▲▲
 }

@@ -14,5 +14,6 @@ public class CustomerListResponseDto {
     private List<ShowTimeInfo> showTimeList;
     private LocalDateTime selectedShowTime;
     private Long selectedShowTimeId;
+    private String keyword; // 새로 추가된 필드
     private List<ReservationDetailDto> reservationList;
 }

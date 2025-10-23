@@ -17,6 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils; // StringUtils import
 
 import java.util.Comparator;
 import java.util.List;
@@ -30,37 +31,38 @@ public class ShowService {
     private final ManagerRepository managerRepository;
     private final KakaoOauthRepository kakaoOauthRepository;
     private final ShowsRepository showsRepository;
-    private final ReservationRepository reservationRepository; // Repository 추가
+    private final ReservationRepository reservationRepository;
 
+    // ... (기존 getMyShows, getReservationList 메소드)
     public MyShowListResponseDto getMyShows() {
-        // ... (기존 getMyShows 메소드)
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal() instanceof OAuth2User)) {
             throw new IllegalStateException("인증된 사용자 정보를 찾을 수 없습니다.");
         }
         OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
         String email = (String) oauth2User.getAttributes().get("email");
-
         KakaoOauth kakaoOauth = kakaoOauthRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("해당 이메일의 사용자를 찾을 수 없습니다."));
         Manager manager = managerRepository.findByKakaoOauth(kakaoOauth)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자의 매니저 정보를 찾을 수 없습니다."));
-
         List<Shows> allShows = showsRepository.findByManager(manager);
-
         boolean hasDraft = allShows.stream()
                 .anyMatch(show -> show.getStatus() == DomainEnums.ShowStatus.DRAFT);
-
         List<MyShowItemDto> publishedShows = allShows.stream()
                 .filter(show -> show.getStatus() == DomainEnums.ShowStatus.PUBLISHED)
                 .map(MyShowItemDto::fromEntity)
                 .collect(Collectors.toList());
-
         return new MyShowListResponseDto(hasDraft, publishedShows);
     }
 
-    // 새로 추가된 메소드
     public CustomerListResponseDto getReservationList(Long showId, Long showtimeId) {
+        // 이 메소드는 이제 searchReservationList로 대체될 수 있습니다.
+        return searchReservationList(showId, showtimeId, null);
+    }
+
+
+    // ▼▼▼ 새로 추가된 검색 메소드 ▼▼▼
+    public CustomerListResponseDto searchReservationList(Long showId, Long showtimeId, String keyword) {
         // 1. 매니저 인증 및 공연 소유권 확인
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal() instanceof OAuth2User)) {
@@ -98,11 +100,18 @@ public class ShowService {
                     .findFirst()
                     .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회차 ID입니다: " + showtimeId));
         } else {
-            selectedShowTime = allShowTimes.get(0); // 쿼리 파라미터 없으면 가장 빠른 회차를 기본값으로
+            selectedShowTime = allShowTimes.get(0);
         }
 
-        // 4. 예매 목록 조회
-        List<Reservation> reservations = reservationRepository.findByShowTimeWithDetailsOrderByCreatedAtDesc(selectedShowTime);
+        // 4. 예매 목록 조회 (keyword 유무에 따라 분기)
+        List<Reservation> reservations;
+        if (StringUtils.hasText(keyword)) {
+            // 키워드가 있으면 검색 쿼리 실행
+            reservations = reservationRepository.findByShowTimeAndKeywordWithDetails(selectedShowTime, keyword);
+        } else {
+            // 키워드가 없으면 전체 목록 조회
+            reservations = reservationRepository.findByShowTimeWithDetailsOrderByCreatedAtDesc(selectedShowTime);
+        }
 
         // 5. DTO로 변환
         List<ShowTimeInfo> showTimeInfoList = allShowTimes.stream()
@@ -118,6 +127,7 @@ public class ShowService {
                 showTimeInfoList,
                 selectedShowTime.getStartAt(),
                 selectedShowTime.getId(),
+                keyword, // 검색 키워드 포함
                 reservationDetailDtoList
         );
     }
