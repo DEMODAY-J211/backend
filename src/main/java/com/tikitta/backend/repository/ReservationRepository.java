@@ -18,9 +18,18 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long> {
             "JOIN FETCH r.showTime st " +
             "JOIN FETCH st.show s " +
             "JOIN FETCH s.location l " +
-            "LEFT JOIN FETCH r.reservationItems ri " + // LEFT JOIN: 아이템이 없을 수도 있으므로
-            "LEFT JOIN FETCH ri.showSeat rss " +      // LEFT JOIN: 스탠딩은 showSeat이 null
-            "LEFT JOIN FETCH rss.seat seat " +       // LEFT JOIN
+            "LEFT JOIN FETCH r.reservationItems ri " +
+            "LEFT JOIN FETCH ri.showSeat rss " +
+            "LEFT JOIN FETCH rss.seat seat " +
             "WHERE r.id = :reservationId")
     Optional<Reservation> findByIdWithDetails(@Param("reservationId") Long reservationId);
+
+    // ▼▼▼ 수정된 메소드 ▼▼▼
+    @Query("SELECT r FROM Reservation r " +
+            "JOIN FETCH r.user u " +
+            "JOIN FETCH r.ticketOption " + // 이제 이 JOIN이 정상적으로 동작합니다.
+            "WHERE r.showTime = :showTime " +
+            "ORDER BY r.createdAt DESC")
+    List<Reservation> findByShowTimeWithDetailsOrderByCreatedAtDesc(@Param("showTime") ShowTime showTime);
+    // ▲▲▲ 수정된 메소드 ▲▲▲
 }
