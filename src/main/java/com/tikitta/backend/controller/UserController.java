@@ -4,10 +4,10 @@ import com.tikitta.backend.dto.*;
 import com.tikitta.backend.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -35,6 +35,19 @@ public class UserController {
     @GetMapping("/organization")
     public ResponseEntity<ApiResponse<ManagerOrgResponse>> getOrganization(@PathVariable Long managerId){
         ManagerOrgResponse data = userService.getManagerOrg(managerId);
+        return ResponseEntity.ok(new ApiResponse<>(data));
+    }
+
+    @GetMapping("/myshow")
+    public ResponseEntity<ApiResponse<List<MyReservationItemDto>>> getMyShowReservations(
+            @RequestParam Long managerId, // ◀ 쿼리 파라미터
+            @RequestParam String status,  // ◀ 쿼리 파라미터
+            Authentication authentication) {
+
+        // 1. Service 호출
+        List<MyReservationItemDto> data = userService.getMyReservations(managerId, status, authentication);
+
+        // 2. ApiResponse로 감싸서 반환
         return ResponseEntity.ok(new ApiResponse<>(data));
     }
 
