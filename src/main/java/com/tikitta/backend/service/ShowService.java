@@ -1,15 +1,8 @@
 package com.tikitta.backend.service;
 
 import com.tikitta.backend.domain.*;
-import com.tikitta.backend.dto.CustomerListResponseDto;
-import com.tikitta.backend.dto.MyShowItemDto;
-import com.tikitta.backend.dto.MyShowListResponseDto;
-import com.tikitta.backend.dto.ReservationDetailDto;
-import com.tikitta.backend.dto.ShowTimeInfo;
-import com.tikitta.backend.repository.KakaoOauthRepository;
-import com.tikitta.backend.repository.ManagerRepository;
-import com.tikitta.backend.repository.ReservationRepository;
-import com.tikitta.backend.repository.ShowsRepository;
+import com.tikitta.backend.dto.*;
+import com.tikitta.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -32,6 +25,7 @@ public class ShowService {
     private final KakaoOauthRepository kakaoOauthRepository;
     private final ShowsRepository showsRepository;
     private final ReservationRepository reservationRepository;
+    private final ShowTimeRepository showTimeRepository;
 
     // ... (기존 getMyShows, getReservationList 메소드)
     public MyShowListResponseDto getMyShows() {
@@ -130,5 +124,60 @@ public class ShowService {
                 keyword, // 검색 키워드 포함
                 reservationDetailDtoList
         );
+    }
+
+    //좌석별 조회
+    @Transactional(readOnly = true)
+    public List<ReservationSeatListResponse> getReservationSeatList(Long showtimeId) {
+        // 1. 매니저 인증
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal() instanceof OAuth2User)) {
+            throw new IllegalStateException("인증된 사용자 정보를 찾을 수 없습니다.");
+        }
+        OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
+        String email = (String) oauth2User.getAttributes().get("email");
+
+        // 2. 매니저 조회
+        KakaoOauth kakaoOauth = kakaoOauthRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("해당 이메일의 사용자를 찾을 수 없습니다."));
+        Manager manager = managerRepository.findByKakaoOauth(kakaoOauth)
+                .orElseThrow(() -> new IllegalArgumentException("해당 사용자의 매니저 정보를 찾을 수 없습니다."));
+
+        // 3. 공연 소유권 체크
+        ShowTime showTime = showTimeRepository.findById(showtimeId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회차 ID입니다: " + showtimeId));
+
+        if (!showTime.getShow().getManager().getId().equals(manager.getId())) {
+            throw new AccessDeniedException("해당 공연에 대한 접근 권한이 없습니다.");
+        }
+
+        //해당 회차의 모든 예약을 조회
+        List<Reservation> reservations=reservationRepository.findByShowTime(showTime);
+
+        //Dto 변환
+        /*Dto에 이 코드를 넣는 것이 나을까...*/
+        return reservations.stream()
+                .flatMap(reservation -> reservation.getReservationItems().stream()
+                        .map(item -> {
+                            boolean reserved = item.getReservation().getStatus() == DomainEnums.ReservationStatus.CONFIRMED; //예약 확정에 대해서만 true
+                            String seatLabel = (item.getShowSeat() != null && item.getShowSeat().getSeat() != null)
+                                    ? item.getShowSeat().getSeat().getSeatNumber()
+                                    : null; //스탠딩일때 좌석 null 반환
+
+                            return ReservationSeatListResponse.builder()
+                                    .reservationItemId(item.getId())
+                                    .reservationId(item.getReservation().getId())
+                                    .userId(item.getReservation().getUser().getId())
+                                    .userName(item.getReservation().getUser().getName())
+                                    .phone(item.getReservation().getUser().getPhone())
+                                    .seat(seatLabel)
+                                    .ticketOptionId(item.getReservation().getTicketOption().getId())
+                                    .isEntered(item.isEntered())
+                                    .isReserved(reserved)
+                                    .reservationTime(item.getReservation().getCreatedAt())
+                                    .build();
+                        })
+                )
+                .collect(Collectors.toList());
     }
 }
