@@ -54,4 +54,9 @@ public class ReservationItem {//개별티켓
             this.enteredAt = LocalDateTime.now();
         }
     }
+
+    // QR 코드 URL 설정 메서드
+    public void setQrCodeUrl(String qrCodeUrl) {
+        this.qrCodeUrl = qrCodeUrl;
+    }
 }
