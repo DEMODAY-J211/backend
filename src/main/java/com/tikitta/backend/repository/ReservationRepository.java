@@ -72,4 +72,7 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long> {
             @Param("keyword") String keyword
     );
 
+    List<Reservation> findByShowTime(ShowTime showTime);
+    List<Reservation> findByShowTimeAndStatus(ShowTime showTime, DomainEnums.ReservationStatus status);
+
 }
