@@ -1,14 +1,9 @@
 package com.tikitta.backend.service;
 
-import com.tikitta.backend.domain.KakaoOauth;
-import com.tikitta.backend.domain.Manager;
-import com.tikitta.backend.domain.Reservation;
-import com.tikitta.backend.domain.Shows;
+import com.tikitta.backend.domain.*;
 import com.tikitta.backend.dto.*;
-import com.tikitta.backend.repository.KakaoOauthRepository;
-import com.tikitta.backend.repository.ManagerRepository;
-import com.tikitta.backend.repository.ReservationRepository;
-import com.tikitta.backend.repository.ShowsRepository;
+import com.tikitta.backend.repository.*;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.transaction.annotation.Transactional;
@@ -89,5 +84,22 @@ public class UserService {
         return reservations.stream()
                 .map(MyReservationItemDto::new) // DTO 생성자 사용
                 .collect(Collectors.toList());
+    }
+
+    public MobileTicketResponse getMobileTicket(Long reservationId, Authentication authentication) {
+
+        // 1. 예매 정보 조회 (Fetch Join 활용)
+        Reservation reservation = reservationRepository.findByIdWithDetails(reservationId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 예매입니다. ID: " + reservationId));
+
+        // 2. 접근 권한 확인 (로그인한 사용자의 예매인지)
+        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+        String email = (String) oAuth2User.getAttributes().get("email");
+        if (!reservation.getUser().getEmail().equals(email)) {
+            throw new AccessDeniedException("자신의 예매 내역만 조회할 수 있습니다.");
+        }
+
+        // 3. DTO로 변환하여 반환
+        return new MobileTicketResponse(reservation);
     }
 }
