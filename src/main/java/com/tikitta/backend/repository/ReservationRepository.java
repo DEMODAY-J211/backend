@@ -9,9 +9,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+
 public interface ReservationRepository extends JpaRepository<Reservation,Long> {
 
     List<Reservation> findAllByShowTime(ShowTime showTime);
+
 
     List<Reservation> findByShowTimeAndStatusIn(ShowTime showTime, List<DomainEnums.ReservationStatus> statuses);
 
@@ -63,4 +65,3 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long> {
             @Param("manager") Manager manager,
             @Param("currentTime") LocalDateTime currentTime);
 }
-

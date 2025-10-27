@@ -1,15 +1,8 @@
 package com.tikitta.backend.service;
 
 import com.tikitta.backend.domain.*;
-import com.tikitta.backend.dto.CustomerListResponseDto;
-import com.tikitta.backend.dto.MyShowItemDto;
-import com.tikitta.backend.dto.MyShowListResponseDto;
-import com.tikitta.backend.dto.ReservationDetailDto;
-import com.tikitta.backend.dto.ShowTimeInfo;
-import com.tikitta.backend.repository.KakaoOauthRepository;
-import com.tikitta.backend.repository.ManagerRepository;
-import com.tikitta.backend.repository.ReservationRepository;
-import com.tikitta.backend.repository.ShowsRepository;
+import com.tikitta.backend.dto.*;
+import com.tikitta.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -17,6 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils; // StringUtils import
 
 import java.util.Comparator;
 import java.util.List;
@@ -30,37 +24,39 @@ public class ShowService {
     private final ManagerRepository managerRepository;
     private final KakaoOauthRepository kakaoOauthRepository;
     private final ShowsRepository showsRepository;
-    private final ReservationRepository reservationRepository; // Repository 추가
+    private final ReservationRepository reservationRepository;
+    private final ShowTimeRepository showTimeRepository;
 
+    // ... (기존 getMyShows, getReservationList 메소드)
     public MyShowListResponseDto getMyShows() {
-        // ... (기존 getMyShows 메소드)
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal() instanceof OAuth2User)) {
             throw new IllegalStateException("인증된 사용자 정보를 찾을 수 없습니다.");
         }
         OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
         String email = (String) oauth2User.getAttributes().get("email");
-
         KakaoOauth kakaoOauth = kakaoOauthRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("해당 이메일의 사용자를 찾을 수 없습니다."));
         Manager manager = managerRepository.findByKakaoOauth(kakaoOauth)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자의 매니저 정보를 찾을 수 없습니다."));
-
         List<Shows> allShows = showsRepository.findByManager(manager);
-
         boolean hasDraft = allShows.stream()
                 .anyMatch(show -> show.getStatus() == DomainEnums.ShowStatus.DRAFT);
-
         List<MyShowItemDto> publishedShows = allShows.stream()
                 .filter(show -> show.getStatus() == DomainEnums.ShowStatus.PUBLISHED)
                 .map(MyShowItemDto::fromEntity)
                 .collect(Collectors.toList());
-
         return new MyShowListResponseDto(hasDraft, publishedShows);
     }
 
-    // 새로 추가된 메소드
     public CustomerListResponseDto getReservationList(Long showId, Long showtimeId) {
+        // 이 메소드는 이제 searchReservationList로 대체될 수 있습니다.
+        return searchReservationList(showId, showtimeId, null);
+    }
+
+
+    // ▼▼▼ 새로 추가된 검색 메소드 ▼▼▼
+    public CustomerListResponseDto searchReservationList(Long showId, Long showtimeId, String keyword) {
         // 1. 매니저 인증 및 공연 소유권 확인
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal() instanceof OAuth2User)) {
@@ -98,11 +94,18 @@ public class ShowService {
                     .findFirst()
                     .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회차 ID입니다: " + showtimeId));
         } else {
-            selectedShowTime = allShowTimes.get(0); // 쿼리 파라미터 없으면 가장 빠른 회차를 기본값으로
+            selectedShowTime = allShowTimes.get(0);
         }
 
-        // 4. 예매 목록 조회
-        List<Reservation> reservations = reservationRepository.findByShowTimeWithDetailsOrderByCreatedAtDesc(selectedShowTime);
+        // 4. 예매 목록 조회 (keyword 유무에 따라 분기)
+        List<Reservation> reservations;
+        if (StringUtils.hasText(keyword)) {
+            // 키워드가 있으면 검색 쿼리 실행
+            reservations = reservationRepository.findByShowTimeAndKeywordWithDetails(selectedShowTime, keyword);
+        } else {
+            // 키워드가 없으면 전체 목록 조회
+            reservations = reservationRepository.findByShowTimeWithDetailsOrderByCreatedAtDesc(selectedShowTime);
+        }
 
         // 5. DTO로 변환
         List<ShowTimeInfo> showTimeInfoList = allShowTimes.stream()
@@ -118,7 +121,63 @@ public class ShowService {
                 showTimeInfoList,
                 selectedShowTime.getStartAt(),
                 selectedShowTime.getId(),
+                keyword, // 검색 키워드 포함
                 reservationDetailDtoList
         );
+    }
+
+    //좌석별 조회
+    @Transactional(readOnly = true)
+    public List<ReservationSeatListResponse> getReservationSeatList(Long showtimeId) {
+        // 1. 매니저 인증
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal() instanceof OAuth2User)) {
+            throw new IllegalStateException("인증된 사용자 정보를 찾을 수 없습니다.");
+        }
+        OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
+        String email = (String) oauth2User.getAttributes().get("email");
+
+        // 2. 매니저 조회
+        KakaoOauth kakaoOauth = kakaoOauthRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("해당 이메일의 사용자를 찾을 수 없습니다."));
+        Manager manager = managerRepository.findByKakaoOauth(kakaoOauth)
+                .orElseThrow(() -> new IllegalArgumentException("해당 사용자의 매니저 정보를 찾을 수 없습니다."));
+
+        // 3. 공연 소유권 체크
+        ShowTime showTime = showTimeRepository.findById(showtimeId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회차 ID입니다: " + showtimeId));
+
+        if (!showTime.getShow().getManager().getId().equals(manager.getId())) {
+            throw new AccessDeniedException("해당 공연에 대한 접근 권한이 없습니다.");
+        }
+
+        //해당 회차의 모든 예약을 조회
+        List<Reservation> reservations=reservationRepository.findByShowTime(showTime);
+
+        //Dto 변환
+        /*Dto에 이 코드를 넣는 것이 나을까...*/
+        return reservations.stream()
+                .flatMap(reservation -> reservation.getReservationItems().stream()
+                        .map(item -> {
+                            boolean reserved = item.getReservation().getStatus() == DomainEnums.ReservationStatus.CONFIRMED; //예약 확정에 대해서만 true
+                            String seatLabel = (item.getShowSeat() != null && item.getShowSeat().getSeat() != null)
+                                    ? item.getShowSeat().getSeat().getSeatNumber()
+                                    : null; //스탠딩일때 좌석 null 반환
+
+                            return ReservationSeatListResponse.builder()
+                                    .reservationItemId(item.getId())
+                                    .reservationId(item.getReservation().getId())
+                                    .userId(item.getReservation().getUser().getId())
+                                    .userName(item.getReservation().getUser().getName())
+                                    .phone(item.getReservation().getUser().getPhone())
+                                    .seat(seatLabel)
+                                    .ticketOptionId(item.getReservation().getTicketOption().getId())
+                                    .isEntered(item.isEntered())
+                                    .isReserved(reserved)
+                                    .reservationTime(item.getReservation().getCreatedAt())
+                                    .build();
+                        })
+                )
+                .collect(Collectors.toList());
     }
 }
