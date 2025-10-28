@@ -3,6 +3,7 @@ package com.tikitta.backend.service;
 import com.tikitta.backend.domain.*;
 import com.tikitta.backend.dto.*;
 import com.tikitta.backend.repository.*;
+import com.tikitta.backend.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -12,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils; // StringUtils import
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,25 +24,24 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class ShowService {
 
+    private final AuthUtil authUtil;
     private final ManagerRepository managerRepository;
     private final KakaoOauthRepository kakaoOauthRepository;
     private final ShowsRepository showsRepository;
     private final ReservationRepository reservationRepository;
+    private final ReservationItemRepository reservationItemRepository;
     private final ShowTimeRepository showTimeRepository;
+    private final ShowSeatRepository showSeatRepository;
 
     // ... (기존 getMyShows, getReservationList 메소드)
     public MyShowListResponseDto getMyShows() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal() instanceof OAuth2User)) {
-            throw new IllegalStateException("인증된 사용자 정보를 찾을 수 없습니다.");
-        }
-        OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
-        String email = (String) oauth2User.getAttributes().get("email");
-        KakaoOauth kakaoOauth = kakaoOauthRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("해당 이메일의 사용자를 찾을 수 없습니다."));
-        Manager manager = managerRepository.findByKakaoOauth(kakaoOauth)
+        KakaoOauth user=authUtil.getCurrentUser();
+
+        Manager manager = managerRepository.findByKakaoOauth(user)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자의 매니저 정보를 찾을 수 없습니다."));
+
         List<Shows> allShows = showsRepository.findByManager(manager);
+
         boolean hasDraft = allShows.stream()
                 .anyMatch(show -> show.getStatus() == DomainEnums.ShowStatus.DRAFT);
         List<MyShowItemDto> publishedShows = allShows.stream()
@@ -58,16 +60,9 @@ public class ShowService {
     // ▼▼▼ 새로 추가된 검색 메소드 ▼▼▼
     public CustomerListResponseDto searchReservationList(Long showId, Long showtimeId, String keyword) {
         // 1. 매니저 인증 및 공연 소유권 확인
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal() instanceof OAuth2User)) {
-            throw new IllegalStateException("인증된 사용자 정보를 찾을 수 없습니다.");
-        }
-        OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
-        String email = (String) oauth2User.getAttributes().get("email");
+        KakaoOauth user=authUtil.getCurrentUser();
 
-        KakaoOauth kakaoOauth = kakaoOauthRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("해당 이메일의 사용자를 찾을 수 없습니다."));
-        Manager manager = managerRepository.findByKakaoOauth(kakaoOauth)
+        Manager manager = managerRepository.findByKakaoOauth(user)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자의 매니저 정보를 찾을 수 없습니다."));
 
         Shows show = showsRepository.findById(showId)
@@ -130,17 +125,10 @@ public class ShowService {
     @Transactional(readOnly = true)
     public List<ReservationSeatListResponse> getReservationSeatList(Long showtimeId) {
         // 1. 매니저 인증
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal() instanceof OAuth2User)) {
-            throw new IllegalStateException("인증된 사용자 정보를 찾을 수 없습니다.");
-        }
-        OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
-        String email = (String) oauth2User.getAttributes().get("email");
+        KakaoOauth user=authUtil.getCurrentUser();
 
         // 2. 매니저 조회
-        KakaoOauth kakaoOauth = kakaoOauthRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("해당 이메일의 사용자를 찾을 수 없습니다."));
-        Manager manager = managerRepository.findByKakaoOauth(kakaoOauth)
+        Manager manager = managerRepository.findByKakaoOauth(user)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자의 매니저 정보를 찾을 수 없습니다."));
 
         // 3. 공연 소유권 체크
@@ -179,5 +167,93 @@ public class ShowService {
                         })
                 )
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public CheckinStatusUpdateResponse updateCheckinStatus(Long showId, Long showtimeId, CheckinStatusUpdateRequest request){
+        KakaoOauth user=authUtil.getCurrentUser();
+
+        // 매니저 조회
+        Manager manager = managerRepository.findByKakaoOauth(user)
+                .orElseThrow(() -> new IllegalArgumentException("해당 사용자의 매니저 정보를 찾을 수 없습니다."));
+
+        Shows show = showsRepository.findById(showId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 공연입니다."));
+        if (!show.getManager().getId().equals(manager.getId())) {
+            throw new AccessDeniedException("해당 공연에 대한 접근 권한이 없습니다.");
+        }
+
+        //회차 검증
+        ShowTime showTime = showTimeRepository.findById(showtimeId).orElseThrow(()-> new IllegalArgumentException("존재하지 않은 회차의 ID입니다."));
+
+        if (!showTime.getShow().getId().equals(showId)) {
+            throw new IllegalArgumentException("회차가 해당 공연에 속하지 않습니다.");
+        }
+
+        //좌석 상태 변경 로직 수행(isReserved, isEntered 수정)
+        int updatedCount =0;
+        List<Long> failedIds = new ArrayList<>();
+
+        for (CheckinStatusUpdateRequest.CheckinStatusUpdateItem item :  request.getCheckinStatusUpdateRequest()){
+            try {
+                ReservationItem reservationItem = reservationItemRepository.findById(item.getReservationItemId())
+                        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 예매 항목입니다."));
+
+                //좌석 취소
+                if (Boolean.FALSE.equals(item.getIsReserved())) {
+                    reservationItem.setEntered(false);
+                    reservationItem.getReservation().setStatus(DomainEnums.ReservationStatus.CANCELED);
+                }
+
+                //현장 예매 생성 & 입장 처리
+                else if (Boolean.TRUE.equals(item.getIsReserved())&&item.getReservationItemId() == null) {
+
+                    //새로운 reservation 생성
+                    Reservation newReservation = Reservation.builder()
+                            .user(manager.getKakaoOauth())
+                            .showTime(showTime)
+                            .status(DomainEnums.ReservationStatus.CONFIRMED)
+                            .createdAt(LocalDateTime.now())
+                            .build();
+                    reservationRepository.save(newReservation);
+
+                    //reservationItem 생성
+                    ReservationItem newItem;
+                    if(item.getShowSeatId()!=null) { //좌석제
+                        ShowSeat showSeat = showSeatRepository.findById(item.getShowSeatId())
+                                .orElseThrow(()-> new IllegalArgumentException("좌석 정보를 찾을 수 없습니다."));
+                        newItem = ReservationItem.builder()
+                                .reservation(newReservation)
+                                .showSeat(showSeat)
+                                .build();
+                    }
+                    else{//스탠딩
+                        newItem=ReservationItem.builder()
+                                .reservation(newReservation)
+                                .entryNumber(item.getEntryNumber())
+                                .build();
+                    }
+                    newItem.checkIn(); //입장 처리
+                    reservationItemRepository.save(newItem);
+                }
+
+                //입장 상태만 수정
+                else if(item.getIsEntered()!=null && item.getReservationItemId() !=null){
+                    ReservationItem reservationItem2 = reservationItemRepository.findById(item.getReservationItemId())
+                            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 예매 항목입니다."));
+                    reservationItem2.setEntered(item.getIsEntered());
+                }
+
+                updatedCount++;
+
+            } catch (Exception e){
+                failedIds.add(item.getReservationItemId());
+            }
+        }
+
+        return CheckinStatusUpdateResponse.builder()
+                .updatedCount(updatedCount)
+                .failedIds(failedIds)
+                .build();
     }
 }
