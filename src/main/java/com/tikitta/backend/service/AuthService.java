@@ -5,7 +5,7 @@ import com.tikitta.backend.domain.Manager;
 import com.tikitta.backend.dto.KakaoSignupRequest;
 import com.tikitta.backend.repository.KakaoOauthRepository;
 import com.tikitta.backend.repository.ManagerRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

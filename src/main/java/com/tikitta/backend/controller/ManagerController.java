@@ -3,8 +3,13 @@ package com.tikitta.backend.controller;
 import com.tikitta.backend.domain.KakaoOauth;
 import com.tikitta.backend.domain.Manager;
 import com.tikitta.backend.dto.*;
+import com.tikitta.backend.dto.ApiResponse;
+import com.tikitta.backend.dto.CustomerListResponseDto;
+import com.tikitta.backend.dto.MyShowListResponseDto;
+import com.tikitta.backend.dto.QrReadResponseDto;
 import com.tikitta.backend.repository.KakaoOauthRepository;
 import com.tikitta.backend.repository.ManagerRepository;
+import com.tikitta.backend.service.CheckInService;
 import com.tikitta.backend.service.ShowService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +19,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/manager")
@@ -23,6 +29,7 @@ public class ManagerController {
     private final KakaoOauthRepository kakaoOauthRepository;
     private final ManagerRepository managerRepository;
     private final ShowService showService;
+    private final CheckInService checkInService;
 
     @GetMapping("/link")
     public ResponseEntity<String> getManagerLink(Authentication authentication) {
@@ -48,30 +55,34 @@ public class ManagerController {
     public ResponseEntity<ApiResponse<CustomerListResponseDto>> getShowCustomers(
             @PathVariable Long showId,
             @RequestParam(required = false) Long showtimeId) {
-        // keyword가 없는 검색이므로, searchReservationList에 null을 전달하여 호출
-        CustomerListResponseDto reservationList = showService.searchReservationList(showId, showtimeId, null);
+        CustomerListResponseDto reservationList = showService.getReservationList(showId, showtimeId);
         return ResponseEntity.ok(new ApiResponse<>(reservationList));
     }
 
-    // ▼▼▼ 새로 추가된 검색 엔드포인트 ▼▼▼
-    @GetMapping("/shows/{showId}/customer/search")
+    // 새로 추가된 기능 — QR 코드로 입장 체크인
+    @GetMapping("/shows/{showId}/QR")
     @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<ApiResponse<CustomerListResponseDto>> searchShowCustomers(
+    public ResponseEntity<Object> checkInByQrCode(
             @PathVariable Long showId,
-            @RequestParam(required = false) Long showtimeId,
-            @RequestParam(required = false) String keyword) {
-        CustomerListResponseDto reservationList = showService.searchReservationList(showId, showtimeId, keyword);
-        return ResponseEntity.ok(new ApiResponse<>(reservationList));
+            @RequestParam("showtimeId") Long showtimeId,
+            @RequestParam("code") String qrCode) {
+
+        QrReadResponseDto responseDto = checkInService.checkInWithQrCode(showtimeId, qrCode);
+
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "code", 200,
+                "message", "success:입장 완료",
+                "data", responseDto
+        ));
     }
-    // ▲▲▲ 새로 추가된 검색 엔드포인트 ▲▲▲
 
     //좌석별 조회
     @GetMapping("/{showId}/checkin")
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<List<ReservationSeatListResponse>>> getShowSeats(
             @PathVariable Long showId,
-            @RequestParam Long showtimeId
-    ){
+            @RequestParam Long showtimeId){
         List<ReservationSeatListResponse> seatList = showService.getReservationSeatList(showtimeId);
         return ResponseEntity.ok(new ApiResponse<>(seatList));
     }

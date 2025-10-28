@@ -44,11 +44,16 @@ public class UserController {
             @RequestParam String status,  // ◀ 쿼리 파라미터
             Authentication authentication) {
 
-        // 1. Service 호출
         List<MyReservationItemDto> data = userService.getMyReservations(managerId, status, authentication);
-
-        // 2. ApiResponse로 감싸서 반환
         return ResponseEntity.ok(new ApiResponse<>(data));
     }
 
+    @GetMapping("/ticket/{reservationId}")
+    public ResponseEntity<ApiResponse<MobileTicketResponse>> getMobileTicket(
+            @PathVariable Long reservationId,
+            Authentication authentication) {
+
+        MobileTicketResponse data = userService.getMobileTicket(reservationId, authentication);
+        return ResponseEntity.ok(new ApiResponse<>(data));
+    }
 }
