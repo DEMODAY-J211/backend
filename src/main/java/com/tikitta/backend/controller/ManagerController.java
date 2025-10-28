@@ -2,10 +2,7 @@ package com.tikitta.backend.controller;
 
 import com.tikitta.backend.domain.KakaoOauth;
 import com.tikitta.backend.domain.Manager;
-import com.tikitta.backend.dto.ApiResponse;
-import com.tikitta.backend.dto.CustomerListResponseDto;
-import com.tikitta.backend.dto.MyShowListResponseDto;
-import com.tikitta.backend.dto.ReservationSeatListResponse;
+import com.tikitta.backend.dto.*;
 import com.tikitta.backend.repository.KakaoOauthRepository;
 import com.tikitta.backend.repository.ManagerRepository;
 import com.tikitta.backend.service.ShowService;
@@ -14,11 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -73,7 +66,7 @@ public class ManagerController {
     // ▲▲▲ 새로 추가된 검색 엔드포인트 ▲▲▲
 
     //좌석별 조회
-    @GetMapping("/{showId}/seats")
+    @GetMapping("/{showId}/checkin")
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<List<ReservationSeatListResponse>>> getShowSeats(
             @PathVariable Long showId,
@@ -81,5 +74,23 @@ public class ManagerController {
     ){
         List<ReservationSeatListResponse> seatList = showService.getReservationSeatList(showtimeId);
         return ResponseEntity.ok(new ApiResponse<>(seatList));
+    }
+
+    //좌석별 상태 수정
+    @PatchMapping("/{showId}/checkin")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<ApiResponse<CheckinStatusUpdateResponse>> updateCheckinStatus(
+            @PathVariable Long showId,
+            @RequestParam Long showtimeId,
+            @RequestBody CheckinStatusUpdateRequest request
+    ){
+      CheckinStatusUpdateResponse response=showService.updateCheckinStatus(showId,showtimeId,request);
+
+      if (response.getFailedIds().isEmpty()) {
+          return ResponseEntity.ok(new ApiResponse<>(200, "실패없이 모두 업데이트되었습니다.", response));
+      } else {
+          return ResponseEntity.status(207)
+                  .body(new ApiResponse<>(207, "업데이트에 실패한 예약건이 존재합니다.", response));
+      }
     }
 }
