@@ -178,6 +178,7 @@ public class DataInitializer implements CommandLineRunner {
                 .reservationNumber("US25102220112")
                 .user(userOauth)
                 .showTime(showTime1) // ◀ 회차 1에 예매
+                .ticketOption(rSeat) // ◀◀◀ R석 티켓 옵션 연결
                 .quantity(2)
                 .totalPrice(100000) // R석 가격 * 2
                 .refundAccountNumber("987-654-321 (테스트유저)")

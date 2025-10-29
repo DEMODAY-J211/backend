@@ -11,8 +11,10 @@ import java.util.List;
 import java.util.Optional;
 
 
-public interface ReservationRepository extends JpaRepository<Reservation, Long> {
+public interface ReservationRepository extends JpaRepository<Reservation,Long> {
+
     List<Reservation> findAllByShowTime(ShowTime showTime);
+
 
     List<Reservation> findByShowTimeAndStatusIn(ShowTime showTime, List<DomainEnums.ReservationStatus> statuses);
 

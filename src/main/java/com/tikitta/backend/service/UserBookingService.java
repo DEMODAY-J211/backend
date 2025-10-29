@@ -5,11 +5,15 @@ import com.tikitta.backend.dto.BookingDto;
 import com.tikitta.backend.dto.BookingInfoResponse;
 import com.tikitta.backend.dto.ReservationDetailResponse;
 import com.tikitta.backend.repository.*;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -18,6 +22,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -197,5 +202,46 @@ public class UserBookingService {
         // 3. DTO로 변환하여 반환
         return new ReservationDetailResponse(reservation);
     }
+    @Transactional // 쓰기 작업이므로 readOnly=false
+    public void cancelReservation(Long reservationId, Authentication authentication) {
 
+        // 1. 예매 정보 조회
+        Reservation reservation = reservationRepository.findById(reservationId) // Fetch Join 불필요
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "존재하지 않는 예매입니다. ID: " + reservationId));
+
+        // 2. 접근 권한 확인 (로그인한 사용자의 예매인지)
+        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+        String email = (String) oAuth2User.getAttributes().get("email");
+        if (!reservation.getUser().getEmail().equals(email)) {
+            throw new AccessDeniedException("자신의 예매 내역만 취소할 수 있습니다.");
+        }
+
+        // 3. 예매 취소 요청 처리 (Reservation 엔티티의 메소드 호출)
+        boolean success = reservation.requestCancellation();
+
+        if (!success) {
+            // 이미 취소되었거나 취소 불가능한 상태일 경우 예외 발생
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 취소되었거나 취소할 수 없는 예매입니다.");
+        }
+
+        // @Transactional에 의해 변경된 reservation 상태가 자동으로 DB에 반영(저장)됩니다.
+        log.info("예매 취소 요청 완료: Reservation ID={}, New Status={}", reservationId, reservation.getStatus());
+
+        // --- 스탠딩 공연 ---
+        // 스탠딩 공연은 취소 시 별도의 좌석/수량 복구 로직이 당장은 필요 없습니다.
+        // 입장 번호는 그대로 유지되고, 잔여석 계산 시 CANCELLED 상태는 제외됩니다.
+
+        // --- 좌석제 공연 (Select_by_User) ---
+        // TODO: 만약 좌석제 공연(`Select_by_User`)이었다면, 여기서 ReservationItem에 연결된
+        //       ShowSeat를 찾아 `cancel()` 메소드를 호출하여 isAvailable=true로 변경해야 합니다.
+        /*
+        if (reservation.getShowTime().getShow().getSaleMethod() == DomainEnums.SaleMethod.Select_by_User) {
+            reservation.getReservationItems().forEach(item -> {
+                if (item.getShowSeat() != null) {
+                    item.getShowSeat().cancel(); // isAvailable = true
+                }
+            });
+        }
+        */
+    }
 }

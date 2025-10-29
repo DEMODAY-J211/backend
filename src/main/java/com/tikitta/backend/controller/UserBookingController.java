@@ -1,13 +1,11 @@
 package com.tikitta.backend.controller;
 
-import com.tikitta.backend.domain.KakaoOauth;
-import com.tikitta.backend.domain.ShowTime;
-import com.tikitta.backend.domain.Shows;
-import com.tikitta.backend.domain.TicketOption;
+import com.tikitta.backend.domain.*;
 import com.tikitta.backend.repository.*;
 import com.tikitta.backend.service.UserBookingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 import com.tikitta.backend.dto.*;
@@ -15,7 +13,9 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.server.ResponseStatusException;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/user/{managerId}/booking")
@@ -151,5 +151,29 @@ public class UserBookingController {
 
         // 2. ApiResponse로 감싸서 반환
         return ResponseEntity.ok(new ApiResponse<>(data));
+    }
+
+    @PostMapping("/{reservationId}/cancel") // 상태 변경이므로 POST 사용
+    public ResponseEntity<ApiResponse<String>> requestCancelReservation(
+            @PathVariable Long reservationId,
+            Authentication authentication) {
+
+        try {
+            userBookingService.cancelReservation(reservationId, authentication);
+            return ResponseEntity.ok(new ApiResponse<>("예매 취소 요청이 완료되었습니다."));
+        } catch (ResponseStatusException e) {
+            // Service에서 발생시킨 예외 처리 (예: 400, 404)
+            return ResponseEntity.status(e.getStatusCode())
+                    .body(new ApiResponse<>(e.getStatusCode().value(), e.getReason()));
+        } catch (AccessDeniedException e) {
+            // 접근 권한 예외 처리 (403 Forbidden)
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ApiResponse<>(HttpStatus.FORBIDDEN.value(), e.getMessage()));
+        } catch (Exception e) {
+            // 기타 예상치 못한 오류 처리 (500 Internal Server Error)
+            log.error("예매 취소 중 오류 발생: Reservation ID {}", reservationId, e); // 로깅 추가 권장
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), "예매 취소 중 오류가 발생했습니다."));
+        }
     }
 }

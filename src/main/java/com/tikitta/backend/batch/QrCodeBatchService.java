@@ -24,11 +24,10 @@ public class QrCodeBatchService {
     private final ReservationRepository reservationRepository;
     private final QrCodeService qrCodeService;
 
-    /**
-     * 매 10분마다 실행되어, 2시간 뒤에 시작하는 공연의 QR코드를 생성합니다.
-     * cron = "초 분 시 일 월 요일"
-     * "0 */10 * * * *" = 매 10분마다 0초에 실행
-     */
+
+//     * 매 10분마다 실행되어, 2시간 뒤에 시작하는 공연의 QR코드를 생성합니다.
+//     * cron = "초 분 시 일 월 요일"
+//     * "0 */10 * * * *" = 매 10분마다 0초에 실행
     @Scheduled(cron = "0 */10 * * * *")
     @Transactional
     public void generateQrCodes() {

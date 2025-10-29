@@ -66,4 +66,15 @@ public class Reservation {
         this.status = status;
         this.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
     }
+
+    public boolean requestCancellation() {
+        // 취소 불가능한 상태인지 확인
+        if (this.status == DomainEnums.ReservationStatus.CANCELED ||
+                this.status == DomainEnums.ReservationStatus.CANCEL_REQUESTED) {
+            return false; // 이미 취소(요청)된 예매
+        }
+
+        this.status = DomainEnums.ReservationStatus.CANCEL_REQUESTED;
+        return true;
+    }
 }
