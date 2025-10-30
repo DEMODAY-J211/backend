@@ -256,4 +256,26 @@ public class ShowService {
                 .failedIds(failedIds)
                 .build();
     }
+
+    //좌석별 조회
+    @Transactional
+    public List<ReservationSeatListResponse> getReservationSeatList(Long showId, Long showtimeId, String keyword){
+        KakaoOauth user=authUtil.getCurrentUser();
+
+        // 매니저 조회
+        Manager manager = managerRepository.findByKakaoOauth(user)
+                .orElseThrow(() -> new IllegalArgumentException("해당 사용자의 매니저 정보를 찾을 수 없습니다."));
+
+        Shows show = showsRepository.findById(showId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 공연입니다."));
+
+        ShowTime showTime=showTimeRepository.findById(showtimeId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회차입니다."));
+
+        List<Reservation> reservations;
+        if(keyword!=null&&!keyword.isBlank()){
+
+        }
+
+    }
 }

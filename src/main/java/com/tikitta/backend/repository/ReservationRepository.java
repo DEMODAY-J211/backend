@@ -64,4 +64,27 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long> {
             @Param("user") KakaoOauth user,
             @Param("manager") Manager manager,
             @Param("currentTime") LocalDateTime currentTime);
+
+    List<Reservation> findByShowTime(ShowTime showTime);
+
+    //좌석별 조회
+    @Query("SELECT DISTINCT r FROM Reservation r " +
+            "JOIN FETCH r.user u " +
+            "JOIN FETCH r.ticketOption topt " +
+            "LEFT JOIN FETCH r.reservationItems ri " +
+            "LEFT JOIN FETCH ri.showSeat ss " +
+            "LEFT JOIN FETCH ss.seat seat " +
+            "WHERE r.showTime = :showTime " +
+            "AND (" +
+            "   u.name LIKE %:keyword% " +
+            "   OR u.phone LIKE %:keyword% " +
+            "   OR FUNCTION('CONCAT', '', u.id) LIKE %:keyword% " +
+            "   OR (seat.seatNumber LIKE %:keyword%)" +
+            ") " +
+            "ORDER BY r.createdAt DESC")
+    List<Reservation> findByShowTimeAndKeywordWithSeatDetails(
+            @Param("showTime") ShowTime showTime,
+            @Param("keyword") String keyword
+    );
+
 }
