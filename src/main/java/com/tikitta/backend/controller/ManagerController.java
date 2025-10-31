@@ -2,6 +2,7 @@ package com.tikitta.backend.controller;
 
 import com.tikitta.backend.domain.KakaoOauth;
 import com.tikitta.backend.domain.Manager;
+import com.tikitta.backend.dto.*;
 import com.tikitta.backend.dto.ApiResponse;
 import com.tikitta.backend.dto.CustomerListResponseDto;
 import com.tikitta.backend.dto.MyShowListResponseDto;
@@ -17,6 +18,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -28,7 +30,6 @@ public class ManagerController {
     private final ManagerRepository managerRepository;
     private final ShowService showService;
     private final CheckInService checkInService;
-
 
     @GetMapping("/link")
     public ResponseEntity<String> getManagerLink(Authentication authentication) {
@@ -74,5 +75,43 @@ public class ManagerController {
                 "message", "success:입장 완료",
                 "data", responseDto
         ));
+    }
+
+    //좌석별 조회
+    @GetMapping("/{showId}/checkin")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<ApiResponse<List<ReservationSeatListResponse>>> getShowSeats(
+            @PathVariable Long showId,
+            @RequestParam Long showtimeId){
+        List<ReservationSeatListResponse> seatList = showService.getReservationSeatList(showtimeId);
+        return ResponseEntity.ok(new ApiResponse<>(seatList));
+    }
+
+    //좌석별 상태 수정
+    @PatchMapping("/{showId}/checkin")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<ApiResponse<CheckinStatusUpdateResponse>> updateCheckinStatus(
+            @PathVariable Long showId,
+            @RequestParam Long showtimeId,
+            @RequestBody CheckinStatusUpdateRequest request
+    ){
+      CheckinStatusUpdateResponse response=showService.updateCheckinStatus(showId,showtimeId,request);
+
+      if (response.getFailedIds().isEmpty()) {
+          return ResponseEntity.ok(new ApiResponse<>(200, "실패없이 모두 업데이트되었습니다.", response));
+      } else {
+          return ResponseEntity.status(207)
+                  .body(new ApiResponse<>(207, "업데이트에 실패한 예약건이 존재합니다.", response));
+      }
+    }
+
+    @GetMapping("/{showId}/checkin/search")
+    public ResponseEntity<List<ReservationSeatListResponse>> getReservationSeatList(
+            @PathVariable("showId") Long showId,
+            @RequestParam(value = "showtimeId", required = false) Long showtimeId,
+            @RequestParam(value = "keyword", required = false) String keyword
+    ) {
+        List<ReservationSeatListResponse> response = showService.getReservationSeatList(showId, showtimeId, keyword);
+        return ResponseEntity.ok(response);
     }
 }
