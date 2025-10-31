@@ -6,11 +6,15 @@ import com.tikitta.backend.dto.ApiResponse;
 import com.tikitta.backend.dto.CustomerListResponseDto;
 import com.tikitta.backend.dto.MyShowListResponseDto;
 import com.tikitta.backend.dto.QrReadResponseDto;
+import com.tikitta.backend.dto.ReservationStatusUpdateRequest;
+import com.tikitta.backend.dto.ReservationStatusUpdateResponse;
 import com.tikitta.backend.repository.KakaoOauthRepository;
 import com.tikitta.backend.repository.ManagerRepository;
 import com.tikitta.backend.service.CheckInService;
 import com.tikitta.backend.service.ShowService;
+import java.util.LinkedHashMap;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -57,6 +61,39 @@ public class ManagerController {
         CustomerListResponseDto reservationList = showService.getReservationList(showId, showtimeId);
         return ResponseEntity.ok(new ApiResponse<>(reservationList));
     }
+
+    @PatchMapping("/shows/{showId}/customers")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<Map<String, Object>> updateReservationStatus(
+        @PathVariable Long showId,
+        @RequestParam Long showtimeId,
+        @RequestBody ReservationStatusUpdateRequest request) {
+        ReservationStatusUpdateResponse responseData = showService.updateReservationStatus(showId,
+            showtimeId, request);
+
+        HttpStatus status;
+        String message;
+        int code;
+
+        if (responseData.getFailedIds() == null || responseData.getFailedIds().isEmpty()) {
+            status = HttpStatus.OK;
+            code = 200;
+            message = "Reservation statuses updated successfully";
+        } else {
+            status = HttpStatus.MULTI_STATUS;
+            code = 207;
+            message = "Some reservations failed to update";
+        }
+
+        Map<String, Object> responseBody = new LinkedHashMap<>();
+        responseBody.put("success", true);
+        responseBody.put("code", code);
+        responseBody.put("message", message);
+        responseBody.put("data", responseData);
+
+        return new ResponseEntity<>(responseBody, status);
+    }
+
 
     // 새로 추가된 기능 — QR 코드로 입장 체크인
     @GetMapping("/shows/{showId}/QR")
