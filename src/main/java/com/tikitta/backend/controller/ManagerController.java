@@ -104,4 +104,14 @@ public class ManagerController {
                   .body(new ApiResponse<>(207, "업데이트에 실패한 예약건이 존재합니다.", response));
       }
     }
+
+    @GetMapping("/{showId}/checkin/search")
+    public ResponseEntity<List<ReservationSeatListResponse>> getReservationSeatList(
+            @PathVariable("showId") Long showId,
+            @RequestParam(value = "showtimeId", required = false) Long showtimeId,
+            @RequestParam(value = "keyword", required = false) String keyword
+    ) {
+        List<ReservationSeatListResponse> response = showService.getReservationSeatList(showId, showtimeId, keyword);
+        return ResponseEntity.ok(response);
+    }
 }

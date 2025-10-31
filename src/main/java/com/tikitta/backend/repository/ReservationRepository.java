@@ -47,7 +47,8 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long> {
             "JOIN FETCH st.show s " +
             "JOIN FETCH r.ticketOption " +
             "WHERE r.user = :user AND s.manager = :manager AND st.startAt > :currentTime " + // ◀ 조건 추가
-            "ORDER BY st.startAt ASC") // ◀ 다가올 순서로 정렬
+            "ORDER BY st.startAt ASC")
+    // ◀ 다가올 순서로 정렬
     List<Reservation> findUpcomingReservationsByUserAndManager(
             @Param("user") KakaoOauth user,
             @Param("manager") Manager manager,
@@ -61,11 +62,13 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long> {
             "JOIN FETCH st.show s " +
             "JOIN FETCH r.ticketOption " +
             "WHERE r.user = :user AND s.manager = :manager AND st.startAt <= :currentTime " + // ◀ 조건 추가
-            "ORDER BY st.startAt DESC") // ◀ 최근 지난 순서로 정렬
+            "ORDER BY st.startAt DESC")
+    // ◀ 최근 지난 순서로 정렬
     List<Reservation> findPastReservationsByUserAndManager(
             @Param("user") KakaoOauth user,
             @Param("manager") Manager manager,
             @Param("currentTime") LocalDateTime currentTime);
+
     @Query("SELECT r FROM Reservation r " +
             "JOIN FETCH r.user u " +
             "JOIN FETCH r.ticketOption " +
@@ -80,26 +83,7 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long> {
     );
 
     List<Reservation> findByShowTime(ShowTime showTime);
-    List<Reservation> findByShowTimeAndStatus(ShowTime showTime, DomainEnums.ReservationStatus status);
 
-    //좌석별 조회
-    @Query("SELECT DISTINCT r FROM Reservation r " +
-            "JOIN FETCH r.user u " +
-            "JOIN FETCH r.ticketOption topt " +
-            "LEFT JOIN FETCH r.reservationItems ri " +
-            "LEFT JOIN FETCH ri.showSeat ss " +
-            "LEFT JOIN FETCH ss.seat seat " +
-            "WHERE r.showTime = :showTime " +
-            "AND (" +
-            "   u.name LIKE %:keyword% " +
-            "   OR u.phone LIKE %:keyword% " +
-            "   OR FUNCTION('CONCAT', '', u.id) LIKE %:keyword% " +
-            "   OR (seat.seatNumber LIKE %:keyword%)" +
-            ") " +
-            "ORDER BY r.createdAt DESC")
-    List<Reservation> findByShowTimeAndKeywordWithSeatDetails(
-            @Param("showTime") ShowTime showTime,
-            @Param("keyword") String keyword
-    );
+    List<Reservation> findByShowTimeAndStatus(ShowTime showTime, DomainEnums.ReservationStatus status);
 
 }

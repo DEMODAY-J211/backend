@@ -259,8 +259,8 @@ public class ShowService {
 
     //좌석별 조회
     @Transactional
-    public List<ReservationSeatListResponse> getReservationSeatList(Long showId, Long showtimeId, String keyword){
-        KakaoOauth user=authUtil.getCurrentUser();
+    public List<ReservationSeatListResponse> getReservationSeatList(Long showId, Long showtimeId, String keyword) {
+        KakaoOauth user = authUtil.getCurrentUser();
 
         // 매니저 조회
         Manager manager = managerRepository.findByKakaoOauth(user)
@@ -269,13 +269,52 @@ public class ShowService {
         Shows show = showsRepository.findById(showId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 공연입니다."));
 
-        ShowTime showTime=showTimeRepository.findById(showtimeId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회차입니다."));
+        //회차 목록 조회 및 선택
+        List<ShowTime> allShowTimes = show.getShowTimes().stream()
+                .sorted(Comparator.comparing(ShowTime::getStartAt))
+                .collect(Collectors.toList());
 
-        List<Reservation> reservations;
-        if(keyword!=null&&!keyword.isBlank()){
-
+        if (allShowTimes.isEmpty()) {
+            throw new IllegalArgumentException("해당 공연에 등록된 회차가 없습니다.");
         }
+
+        ShowTime selectedShowTime;
+        if (showtimeId != null) {
+            selectedShowTime = allShowTimes.stream()
+                    .filter(st -> st.getId().equals(showtimeId))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회차 ID입니다: " + showtimeId));
+        } else {
+            selectedShowTime = allShowTimes.get(0);
+        }
+
+        // 4. 예매 좌석 목록 조회 (이름, 좌석번호 기준 검색)
+        List<ReservationItem> reservationItems;
+        if (StringUtils.hasText(keyword)) {
+            reservationItems = reservationItemRepository.findReservationItemsByShowTimeAndKeyword(selectedShowTime, keyword);
+        } else {
+            reservationItems = reservationItemRepository.findReservationItemsByShowTime(selectedShowTime);
+        }
+
+        // 5. DTO 변환
+        List<ReservationSeatListResponse> responseList = reservationItems.stream()
+                .map(ri -> ReservationSeatListResponse.builder()
+                        .reservationItemId(ri.getId())
+                        .reservationId(ri.getReservation().getId())
+                        .userId(ri.getReservation().getUser().getId())
+                        .userName(ri.getReservation().getUser().getName())
+                        .phone(ri.getReservation().getUser().getPhone())
+                        .seat(ri.getShowSeat() != null ? ri.getShowSeat().getSeat().getSeatNumber() : null)
+                        .ticketOptionId(ri.getReservation().getTicketOption().getId())
+                        .isEntered(ri.isEntered())
+                        .isReserved(ri.getReservation() != null &&
+                                ri.getReservation().getStatus() != DomainEnums.ReservationStatus.CANCEL_REQUESTED)
+                        .reservationTime(ri.getReservation().getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
+
+        // 6. 반환
+        return responseList;
 
     }
 }
