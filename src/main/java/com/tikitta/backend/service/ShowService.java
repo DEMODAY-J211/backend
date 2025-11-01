@@ -32,7 +32,6 @@ public class ShowService {
     private final ReservationRepository reservationRepository;
     private final ReservationItemRepository reservationItemRepository;
     private final ShowTimeRepository showTimeRepository;
-    private final ReservationItemRepository reservationItemRepository;
     private final ShowSeatRepository showSeatRepository;
 
     // ... (기존 getMyShows, getReservationList 메소드)
