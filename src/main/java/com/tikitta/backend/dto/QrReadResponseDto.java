@@ -36,7 +36,7 @@ public class QrReadResponseDto {
                 .reservationItemId(item.getId())
                 .showtimeId(item.getReservation().getShowTime().getId())
                 .userId(item.getReservation().getUser().getId())
-                .name(item.getReservation().getUser().getProfile().getNickname())
+                .name(item.getReservation().getUser().getName())
                 .ticketOption(item.getReservation().getTicketOption().getName())
                 .seat(seatInfo)
                 .isEntered(item.isEntered())
