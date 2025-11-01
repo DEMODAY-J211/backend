@@ -34,12 +34,20 @@ public class ShowTime {
     @Column(name = "show_time_standing_quantity")
     private Integer totalStandingQuantity;
 
+    @Column(name = "showtime_user_count", nullable = false)
+    private Long userCount;
+
+    @Column(name = "showtime_remain_seat_count", nullable = false)
+    private Long remainSeatCount;
+
     @Builder
-    public ShowTime(Shows show, LocalDateTime startAt, LocalDateTime endAt, LocalDateTime bookingEndAt,  Integer totalStandingQuantity) {
+    public ShowTime(Shows show, LocalDateTime startAt, LocalDateTime endAt, LocalDateTime bookingEndAt,  Integer totalStandingQuantity, Long userCount, Long remainSeatCount) {
         this.show = show;
         this.startAt = startAt;
         this.endAt = endAt;
         this.bookingEndAt = bookingEndAt;
         this.totalStandingQuantity = totalStandingQuantity;
+        this.userCount = userCount != null ? userCount : 0L;
+        this.remainSeatCount = remainSeatCount;
     }
 }

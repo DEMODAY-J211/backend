@@ -3,6 +3,8 @@ package com.tikitta.backend.service;
 import com.tikitta.backend.domain.*;
 import com.tikitta.backend.dto.*;
 import com.tikitta.backend.repository.*;
+import java.util.ArrayList;
+import java.util.List;
 import com.tikitta.backend.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -16,7 +18,6 @@ import org.springframework.util.StringUtils; // StringUtils import
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,6 +32,7 @@ public class ShowService {
     private final ReservationRepository reservationRepository;
     private final ReservationItemRepository reservationItemRepository;
     private final ShowTimeRepository showTimeRepository;
+    private final ReservationItemRepository reservationItemRepository;
     private final ShowSeatRepository showSeatRepository;
 
     // ... (기존 getMyShows, getReservationList 메소드)
@@ -119,6 +121,63 @@ public class ShowService {
                 keyword, // 검색 키워드 포함
                 reservationDetailDtoList
         );
+    }
+
+    @Transactional
+    public ReservationStatusUpdateResponse updateReservationStatus(Long showId, Long showtimeId, ReservationStatusUpdateRequest request) {
+        int updatedCount = 0;
+        List<Long> failedIds = new ArrayList<>();
+
+        for (ReservationStatusInfo info : request.getReservations()) {
+            try {
+                Reservation reservation = reservationRepository.findById(info.getReservationId())
+                    .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
+
+                if (!reservation.getShowTime().getShow().getId().equals(showId)) {
+                    throw new AccessDeniedException("Reservation does not belong to the specified show.");
+                }
+
+                DomainEnums.ReservationStatus newStatus = convertStatus(info.getStatus());
+
+                // Update Reservation status
+                reservationRepository.updateStatus(reservation.getId(), newStatus);
+
+                // Update ReservationItem status
+                reservationItemRepository.updateStatusByReservationId(reservation.getId(), newStatus);
+
+                if (newStatus == DomainEnums.ReservationStatus.CANCELED) {
+                    // Restore ShowTime seat count
+                    showTimeRepository.increaseRemainSeat(reservation.getShowTime().getId(), reservation.getQuantity());
+
+                    // Restore ShowSeat availability
+                    List<ReservationItem> items = reservationItemRepository.findByReservation(reservation);
+                    for (ReservationItem item : items) {
+                        if (item.getShowSeat() != null) {
+                            showSeatRepository.updateIsAvailable(item.getShowSeat().getId(), true);
+                        }
+                    }
+                }
+
+                updatedCount++;
+            } catch (Exception e) {
+                failedIds.add(info.getReservationId());
+            }
+        }
+
+        return new ReservationStatusUpdateResponse(updatedCount, failedIds);
+    }
+
+    private DomainEnums.ReservationStatus convertStatus(String status) {
+        switch (status) {
+            case "입금확인":
+                return DomainEnums.ReservationStatus.CONFIRMED;
+            case "환불대기":
+                return DomainEnums.ReservationStatus.CANCEL_REQUESTED;
+            case "환불완료":
+                return DomainEnums.ReservationStatus.CANCELED;
+            default:
+                throw new IllegalArgumentException("Invalid status: " + status);
+        }
     }
 
     //좌석별 조회
