@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -20,6 +21,7 @@ public interface ReservationItemRepository extends JpaRepository<ReservationItem
 
     List<ReservationItem> findByReservation(Reservation reservation);
 
+    @Transactional
     @Modifying
     @Query("UPDATE ReservationItem ri SET ri.status = :status WHERE ri.reservation.id = :reservationId")
     void updateStatusByReservationId(@Param("reservationId") Long reservationId, @Param("status") DomainEnums.ReservationStatus status);

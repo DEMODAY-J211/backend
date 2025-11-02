@@ -124,12 +124,14 @@ public class DataInitializer implements CommandLineRunner {
                 .startAt(LocalDateTime.now().plusDays(10).withHour(19).withMinute(0))
                 .endAt(LocalDateTime.now().plusDays(10).withHour(21).withMinute(0))
                 .bookingEndAt(LocalDateTime.now().plusDays(9))
+                .remainSeatCount(100L)
                 .build();
         ShowTime showTime2 = ShowTime.builder()
                 .show(testShow)
                 .startAt(LocalDateTime.now().plusDays(11).withHour(15).withMinute(0)) // 11일 뒤 15:00
                 .endAt(LocalDateTime.now().plusDays(11).withHour(17).withMinute(0))
                 .bookingEndAt(LocalDateTime.now().plusDays(10))
+                .remainSeatCount(100L)
                 .build();
         showTimeRepository.saveAll(List.of(showTime1, showTime2)); // ◀ saveAll 사용
 
@@ -190,10 +192,12 @@ public class DataInitializer implements CommandLineRunner {
         ReservationItem item1 = ReservationItem.builder()
                 .reservation(testReservation)
                 .showSeat(st1_seatA1) // ◀ 회차 1의 A1 좌석
+                .status(DomainEnums.ReservationStatus.CONFIRMED)
                 .build();
         ReservationItem item2 = ReservationItem.builder()
                 .reservation(testReservation)
                 .showSeat(st1_seatA2) // ◀ 회차 1의 A2 좌석
+                .status(DomainEnums.ReservationStatus.CONFIRMED)
                 .build();
         reservationItemRepository.saveAll(List.of(item1, item2));
 

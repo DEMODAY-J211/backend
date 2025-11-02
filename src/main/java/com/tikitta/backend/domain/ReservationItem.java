@@ -29,6 +29,10 @@ public class ReservationItem {//개별티켓
     @Column(name = "reservation_entry_number")
     private Integer entryNumber;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "reservation_status", nullable = false)
+    private DomainEnums.ReservationStatus status;
+
     @Column(name = "reservation_item_qr")
     private String qrCodeUrl;
 
@@ -39,11 +43,12 @@ public class ReservationItem {//개별티켓
     private boolean isEntered = false;
 
     @Builder
-    public ReservationItem(Reservation reservation, ShowSeat showSeat, Integer entryNumber, String qrCodeUrl) {
+    public ReservationItem(Reservation reservation, ShowSeat showSeat, Integer entryNumber, String qrCodeUrl, DomainEnums.ReservationStatus status) {
         this.reservation = reservation;
         this.showSeat = showSeat;
         this.entryNumber = entryNumber;
         this.qrCodeUrl = qrCodeUrl;
+        this.status = status;
     }
 
     // 입장 처리 로직
