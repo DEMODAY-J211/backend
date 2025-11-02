@@ -7,10 +7,10 @@ import com.tikitta.backend.service.AuthService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
@@ -58,10 +58,11 @@ public class AuthController {
 
         OAuth2User oAuth2UserPrincipal = new DefaultOAuth2User(authorities, attributes, nameAttributeKey);
 
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
+        // OAuth2AuthenticationToken 생성
+        Authentication authentication = new OAuth2AuthenticationToken(
                 oAuth2UserPrincipal,
-                null,
-                authorities
+                authorities,
+                "kakao" // authorizedClientRegistrationId
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);

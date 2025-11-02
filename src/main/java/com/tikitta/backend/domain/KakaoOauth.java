@@ -39,6 +39,12 @@ public class KakaoOauth {
 
     @Column(name = "oauth_created", nullable = false)
     private LocalDateTime createdAt;
+    @PrePersist
+    public void prePersist() {
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
+    }
 
     @Enumerated(EnumType.STRING)
     @Column(name = "oauth_visited", nullable = false)
