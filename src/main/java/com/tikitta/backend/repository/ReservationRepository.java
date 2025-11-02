@@ -72,7 +72,7 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long> {
             "WHERE r.showTime = :showTime " +
             "AND (u.name LIKE %:keyword% " +
             "OR u.phone LIKE %:keyword% " +
-            "OR FUNCTION('CONCAT', '', u.id) LIKE %:keyword%) " + // 숫자 ID를 문자열처럼 검색
+            "OR CAST(u.id AS string) LIKE %:keyword%) " + // 숫자 ID를 문자열처럼 검색
             "ORDER BY r.createdAt DESC")
     List<Reservation> findByShowTimeAndKeywordWithDetails(
             @Param("showTime") ShowTime showTime,
