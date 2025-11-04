@@ -1,15 +1,25 @@
 spring:
+  # 1. (추가) DB 설정 (application.properties에서 가져옴)
+  datasource:
+    url: jdbc:mysql://localhost:3306/tikitta?serverTimezone=Asia/Seoul
+    username: tikkita
+    password: 1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
   security:
     oauth2:
       client:
         registration:
           kakao:
-            client-id: ${KAKAO_CLIENT_ID}
-            client-secret: ${KAKAO_CLIENT_SECRET}
+            client-id: 6eda97bf3bccba17cfc112c90731a2c9
+            client-secret: quFa6gCqnBZUtwdrUIQab9JBptBQRwEL
             client-name: Kakao
             redirect-uri: "{baseUrl}/login/oauth2/code/kakao"
             authorization-grant-type: authorization_code
-            client-authentication-method: POST
+            client-authentication-method: client_secret_post
             scope:
               - profile_nickname
               - account_email
@@ -19,5 +29,3 @@ spring:
             token-uri: https://kauth.kakao.com/oauth/token
             user-info-uri: https://kapi.kakao.com/v2/user/me
             user-name-attribute: id
-  config:
-    import: optional:file:.env[.properties]
