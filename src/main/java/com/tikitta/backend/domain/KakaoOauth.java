@@ -24,16 +24,6 @@ public class KakaoOauth {
     private String name;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "oauth_gender")
-    private DomainEnums.Gender gender;
-
-    @Column(name = "oauth_age")
-    private Integer age;
-
-    @Column(name = "oauth_phone")
-    private String phone;
-
-    @Enumerated(EnumType.STRING)
     @Column(name = "oauth_role", nullable = false)
     private DomainEnums.Role role;
 
@@ -54,14 +44,10 @@ public class KakaoOauth {
     private String email;
 
     @Builder
-    public KakaoOauth(Long kakaoId, String name, DomainEnums.Gender gender, Integer age,
-                      String phone, DomainEnums.Role role, LocalDateTime createdAt,
+    public KakaoOauth(Long kakaoId, String name, DomainEnums.Role role, LocalDateTime createdAt,
                       DomainEnums.VisitedPath visitedPath, String email) {
         this.kakaoId = kakaoId;
         this.name = name;
-        this.gender = gender;
-        this.age = age;
-        this.phone = phone;
         this.role = role != null ? role : DomainEnums.Role.USER; // 기본값 USER
         this.createdAt = createdAt;
         this.visitedPath = visitedPath;

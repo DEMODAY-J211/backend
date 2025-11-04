@@ -42,6 +42,8 @@ public class OAuth2UserCustomService extends DefaultOAuth2UserService {
         String name = (String) profile.get("nickname");
 
         String selectedRole = (String) session.getAttribute("selectedRole");
+        // TODO: 프론트엔드에서 visitedPath를 세션에 저장해주는 로직 추가 필요
+        String visitedPathStr = (String) session.getAttribute("visitedPath");
 
         KakaoOauth user = kakaoOauthRepository.findByEmail(email)
                 .map(entity -> {
@@ -58,7 +60,10 @@ public class OAuth2UserCustomService extends DefaultOAuth2UserService {
                             .name(name)
                             .role(selectedRole != null
                                     ? DomainEnums.Role.valueOf(selectedRole)
-                                    : DomainEnums.Role.USER)
+                                    : DomainEnums.Role.USER) // 기본값 USER
+                            .visitedPath(visitedPathStr != null 
+                                    ? DomainEnums.VisitedPath.valueOf(visitedPathStr) 
+                                    : DomainEnums.VisitedPath.ETC) // 세션에 값이 없으면 ETC를 기본값으로 사용
                             .build();
                 });
 

@@ -18,6 +18,7 @@ import org.springframework.util.StringUtils; // StringUtils import
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -215,7 +216,7 @@ public class ShowService {
                                     .reservationId(item.getReservation().getId())
                                     .userId(item.getReservation().getUser().getId())
                                     .userName(item.getReservation().getUser().getName())
-                                    .phone(item.getReservation().getUser().getPhone())
+                                    .phone(item.getReservation().getPhone())
                                     .seat(seatLabel)
                                     .ticketOptionId(item.getReservation().getTicketOption().getId())
                                     .isEntered(item.isEntered())
@@ -265,11 +266,21 @@ public class ShowService {
 
                 //현장 예매 생성 & 입장 처리
                 else if (Boolean.TRUE.equals(item.getIsReserved())&&item.getReservationItemId() == null) {
+                    if (show.getTicketOptions().isEmpty()) {
+                        throw new IllegalStateException("해당 공연에 티켓 옵션이 없습니다.");
+                    }
+                    TicketOption ticketOption = show.getTicketOptions().get(0);
 
                     //새로운 reservation 생성
                     Reservation newReservation = Reservation.builder()
+                            .reservationNumber(UUID.randomUUID().toString())
                             .user(manager.getKakaoOauth())
                             .showTime(showTime)
+                            .ticketOption(ticketOption)
+                            .quantity(1)
+                            .totalPrice(ticketOption.getPrice())
+                            .refundAccountNumber("현장 예매")
+                            .phone("000-0000-0000")
                             .status(DomainEnums.ReservationStatus.CONFIRMED)
                             .createdAt(LocalDateTime.now())
                             .build();
@@ -361,7 +372,7 @@ public class ShowService {
                         .reservationId(ri.getReservation().getId())
                         .userId(ri.getReservation().getUser().getId())
                         .userName(ri.getReservation().getUser().getName())
-                        .phone(ri.getReservation().getUser().getPhone())
+                        .phone(ri.getReservation().getPhone())
                         .seat(ri.getShowSeat() != null ? ri.getShowSeat().getSeat().getSeatNumber() : null)
                         .ticketOptionId(ri.getReservation().getTicketOption().getId())
                         .isEntered(ri.isEntered())

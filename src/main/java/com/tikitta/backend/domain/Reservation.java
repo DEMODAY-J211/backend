@@ -43,6 +43,9 @@ public class Reservation {
     @Column(name = "reservation_refund_account", nullable = false)
     private String refundAccountNumber;
 
+    @Column(name = "reservation_phone", nullable = false)
+    private String phone;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "reservation_status", nullable = false)
     private DomainEnums.ReservationStatus status;
@@ -54,7 +57,7 @@ public class Reservation {
     private List<ReservationItem> reservationItems = new ArrayList<>();
 
     @Builder
-    public Reservation(String reservationNumber, KakaoOauth user, ShowTime showTime, TicketOption ticketOption, Integer quantity, Integer totalPrice, String refundAccountNumber, DomainEnums.ReservationStatus status, LocalDateTime createdAt) {
+    public Reservation(String reservationNumber, KakaoOauth user, ShowTime showTime, TicketOption ticketOption, Integer quantity, Integer totalPrice, String refundAccountNumber, String phone, DomainEnums.ReservationStatus status, LocalDateTime createdAt) {
         this.reservationNumber = reservationNumber;
         this.user = user;
         this.showTime = showTime;
@@ -62,6 +65,7 @@ public class Reservation {
         this.quantity = quantity;
         this.totalPrice = totalPrice;
         this.refundAccountNumber = refundAccountNumber;
+        this.phone = phone;
         this.status = status;
         this.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
     }
