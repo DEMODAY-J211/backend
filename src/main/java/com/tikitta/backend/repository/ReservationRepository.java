@@ -75,7 +75,7 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long> {
             "JOIN FETCH r.ticketOption " +
             "WHERE r.showTime = :showTime " +
             "AND (u.name LIKE %:keyword% " +
-            "OR u.phone LIKE %:keyword% " +
+            "OR r.phone LIKE %:keyword% " +
             "OR CAST(u.id AS string) LIKE %:keyword%) " + // 숫자 ID를 문자열처럼 검색
             "ORDER BY r.createdAt DESC")
     List<Reservation> findByShowTimeAndKeywordWithDetails(
@@ -91,4 +91,3 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long> {
     @Query("UPDATE Reservation r SET r.status = :status WHERE r.id = :id")
     void updateStatus(@Param("id") Long id, @Param("status") DomainEnums.ReservationStatus status);
 }
-

@@ -38,7 +38,7 @@ public class ReservationDetailResponse {
         this.showLocation = show.getLocation().getName();
         this.reservationNumber = reservation.getReservationNumber();
         this.userName = user.getName();
-        this.userPhone = user.getPhone(); // KakaoOauth에 phone 필드 사용
+        this.userPhone = reservation.getPhone(); // 수정된 부분
         this.reservationDate = reservation.getCreatedAt();
         this.quantity = reservation.getQuantity();
         this.reservationstatus = reservation.getStatus();

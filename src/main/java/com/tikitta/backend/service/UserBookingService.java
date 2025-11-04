@@ -114,6 +114,7 @@ public class UserBookingService {
                 .showTime(showTime)
                 .quantity(sessionDto.getQuantity())
                 .totalPrice(sessionDto.getCalculatedTotalPrice())
+                .phone(sessionDto.getUserPhone()) // ◀◀◀ phone 필드 추가
                 .refundAccountNumber(sessionDto.getRefundBank() + " " + sessionDto.getRefundAccount() + " " + sessionDto.getRefundHolder()) // 환불 정보 조합
                 .status(DomainEnums.ReservationStatus.PENDING_PAYMENT) // ◀ 입금 대기 상태
                 .createdAt(LocalDateTime.now())

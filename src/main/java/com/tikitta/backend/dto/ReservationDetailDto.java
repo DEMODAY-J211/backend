@@ -34,7 +34,7 @@ public class ReservationDetailDto {
                 reservation.getUser().getId(),
                 reservation.getReservationNumber(),
                 reservation.getUser().getName(),
-                reservation.getUser().getPhone(), // KakaoOauth 엔티티에 getPhone()이 있다고 가정
+                reservation.getPhone(), // 수정된 부분: reservation에서 직접 phone 정보 가져오기
                 reservation.getCreatedAt(), // 예매 시간을 생성 시간으로 가정
                 reservation.getStatus().name(), // Enum 이름을 문자열로 변환
                 reserved,

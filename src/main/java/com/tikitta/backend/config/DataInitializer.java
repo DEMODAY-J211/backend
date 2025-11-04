@@ -183,6 +183,7 @@ public class DataInitializer implements CommandLineRunner {
                 .ticketOption(rSeat) // ◀◀◀ R석 티켓 옵션 연결
                 .quantity(2)
                 .totalPrice(100000) // R석 가격 * 2
+                .phone("010-1234-5678") // ◀◀◀ 추가된 부분
                 .refundAccountNumber("987-654-321 (테스트유저)")
                 .status(DomainEnums.ReservationStatus.CONFIRMED)
                 .createdAt(LocalDateTime.now())

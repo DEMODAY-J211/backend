@@ -41,6 +41,8 @@ public class OAuth2UserCustomService extends DefaultOAuth2UserService {
         String email = (String) kakaoAccount.get("email");
         String name = (String) profile.get("nickname");
         String selectedRole = (String) session.getAttribute("selectedRole");
+        // TODO: 프론트엔드에서 visitedPath를 세션에 저장해주는 로직 추가 필요
+        String visitedPathStr = (String) session.getAttribute("visitedPath");
 
         // 3. DB에서 유저 조회 또는 신규 생성
         boolean isSignup = !kakaoOauthRepository.findByEmail(email).isPresent(); // ◀ 신규 유저인지 확인
