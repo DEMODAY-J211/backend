@@ -1,7 +1,5 @@
 package com.tikitta.backend.config;
 
-import com.tikitta.backend.domain.KakaoOauth;
-import com.tikitta.backend.repository.KakaoOauthRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -18,78 +16,69 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
-    private final KakaoOauthRepository kakaoOauthRepository;
-
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
                                         Authentication authentication) throws IOException {
 
-        // 🔹 카카오 로그인 성공 시 사용자 정보 가져오기
+        // 1. Service가 반환한 '커스텀' OAuth2User 객체 가져오기
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-
-        // --- 👇 [ 여기가 수정되어야 합니다 ] ---
-        // 1. 전체 속성 맵 가져오기
         Map<String, Object> attributes = oAuth2User.getAttributes();
-        // 2. 'kakao_account' 맵 가져오기 (OAuth2UserCustomService와 동일하게)
-        Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
-        // 3. 'kakao_account'에서 실제 이메일 가져오기
-        String email = (String) kakaoAccount.get("email");
-        // --- 👆 [ 수정 완료 ] ---
 
-        // 🔹 DB에서 사용자 조회 (이제 email이 정상적으로 들어옵니다)
-        KakaoOauth user = kakaoOauthRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("회원 정보를 찾을 수 없습니다."));
+        // 2. Service가 넣어준 속성 꺼내기 (안전하게)
+        Object isSignupObj = attributes.get("isSignup");
+        boolean isSignup = (isSignupObj instanceof Boolean) ? (Boolean) isSignupObj : false;
 
-        // ... (이하 로직은 기존과 동일합니다) ...
+        Object roleObj = attributes.get("userRole");
+        String role = (roleObj instanceof String) ? (String) roleObj : "USER"; // 기본값 USER
 
-        // 🔹 세션에서 값 가져오기
-        HttpSession session = request.getSession(false);
-        String selectedRole = null;
-        Boolean isSignup = false;
+        String redirectUrl;
 
-        if (session != null) {
-            selectedRole = (String) session.getAttribute("selectedRole"); // "USER" or "MANAGER"
-            isSignup = (Boolean) session.getAttribute("isSignup");        // true or false
+        // 1. [회원가입 플로우]
+        if (isSignup) {
+            // 👇 신규 회원이면 무조건 /select-role (프론트엔드 페이지)로 보냅니다.
+            redirectUrl = "/select-role";
+        }
+        // 2. [로그인 플로우]
+        else {
+            if ("MANAGER".equalsIgnoreCase(role)) {
+                redirectUrl = "/manager/main";
+            } else {
+                // 기존 유저 -> 이전에 방문했던 managerId의 main으로
+                redirectUrl = getDefaultUserRedirectUrl(request.getSession(false));
+            }
         }
 
-        // 🔹 최종 리다이렉트 경로
-        String redirectUrl = "/login/oauth2/code/kakao"; // 기본값
-        String prevUrl = (session != null) ? (String) session.getAttribute("prevUrl") : null;
-
-        // ✅ [회원가입 플로우]
-        if (Boolean.TRUE.equals(isSignup)) {
-            if ("MANAGER".equalsIgnoreCase(selectedRole)) {
-                redirectUrl = "/auth/kakao/manager";
-            } else if ("USER".equalsIgnoreCase(selectedRole)) {
-                redirectUrl = (prevUrl != null) ? prevUrl : "/user/main";
-                if(prevUrl != null) {
-                    session.removeAttribute("prevUrl");
-                }
-            }
-
-            // ✅ [로그인 플로우]
-            else {
-                if (prevUrl != null) {
-                    redirectUrl = prevUrl;
-                    session.removeAttribute("prevUrl");
-                } else if (user.getRole() != null) {
-                    switch (user.getRole()) {
-                        case MANAGER -> redirectUrl = "/manager/main";
-                        case USER -> redirectUrl = "/user/main";
-                    }
-                }
-            }
-
-        // 🔹 세션 정리 (선택)
+        // 5. 사용 완료한 세션 속성 정리
+        HttpSession session = request.getSession(false);
         if (session != null) {
             session.removeAttribute("selectedRole");
-            session.removeAttribute("isSignup");
+            session.removeAttribute("LAST_VISITED_MANAGER_ID");
         }
 
-        // 🔹 리다이렉트 실행
+        clearAuthenticationAttributes(request);
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
     }
-}
-}
 
+    /**
+     * USER의 리다이렉트 URL을 결정하는 헬퍼 메소드
+     */
+    private String getDefaultUserRedirectUrl(HttpSession session) {
+        String managerId = null;
+        if (session != null) {
+            // ManagerIdSaveFilter가 저장한 세션 값 확인
+            Object managerIdObj = session.getAttribute("LAST_VISITED_MANAGER_ID");
+            if (managerIdObj instanceof String) {
+                managerId = (String) managerIdObj;
+            }
+        }
+
+        if (managerId != null) {
+            // 저장된 managerId가 있으면 해당 main으로
+            return "/user/" + managerId + "/main";
+        } else {
+            // (예외 상황) 저장된 managerId가 없으면 테스트용 1번으로
+            return "/user/1/main"; // (또는 "/" 루트 페이지)
+        }
+    }
+}

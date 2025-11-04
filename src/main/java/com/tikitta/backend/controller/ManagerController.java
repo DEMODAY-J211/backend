@@ -14,6 +14,8 @@ import com.tikitta.backend.repository.ManagerRepository;
 import com.tikitta.backend.service.CheckInService;
 import com.tikitta.backend.service.ShowService;
 import java.util.LinkedHashMap;
+
+import com.tikitta.backend.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,11 +36,37 @@ public class ManagerController {
     private final ManagerRepository managerRepository;
     private final ShowService showService;
     private final CheckInService checkInService;
+    private final AuthUtil authUtil; // 2. AuthUtil 주입
 
+    @GetMapping("/main")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<ApiResponse<String>> getManagerMain(Authentication authentication) {
+        // 3. AuthUtil을 사용해 현재 유저(KakaoOauth)를 가져옵니다.
+        KakaoOauth user = authUtil.getCurrentUser();
+
+        // 4. KakaoOauth 정보로 Manager 정보를 조회합니다.
+        Manager manager = managerRepository.findByKakaoOauth(user)
+                .orElseThrow(() -> new RuntimeException("매니저 정보를 찾을 수 없습니다."));
+
+        // 5. 매니저 이름을 반환합니다.
+        return ResponseEntity.ok(new ApiResponse<>(manager.getName()));
+    }
+
+    // ManagerController.java
     @GetMapping("/link")
     public ResponseEntity<String> getManagerLink(Authentication authentication) {
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-        String email = (String) oAuth2User.getAttributes().get("email");
+
+        // --- 👇 [수정된 부분] ---
+        Map<String, Object> attributes = oAuth2User.getAttributes();
+        Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
+        String email = (String) kakaoAccount.get("email");
+        // --- 👆 [수정 완료] ---
+
+        if (email == null) {
+            throw new RuntimeException("로그인된 Oauth 정보를 찾을 수 없습니다. (이메일 없음)");
+        }
+
         KakaoOauth kakaoOauth = kakaoOauthRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("로그인된 Oauth 정보를 찾을 수 없습니다."));
         Manager manager = managerRepository.findByKakaoOauth(kakaoOauth)
