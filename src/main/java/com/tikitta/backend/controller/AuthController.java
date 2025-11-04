@@ -1,10 +1,13 @@
 package com.tikitta.backend.controller;
 
+import com.tikitta.backend.domain.DomainEnums;
 import com.tikitta.backend.domain.KakaoOauth;
 import com.tikitta.backend.dto.KakaoSignupRequest;
 import com.tikitta.backend.repository.KakaoOauthRepository;
 import com.tikitta.backend.service.AuthService;
+import com.tikitta.backend.util.AuthUtil;
 import jakarta.servlet.http.HttpSession;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -25,15 +28,32 @@ public class AuthController {
 
     private final AuthService authService;
     private final KakaoOauthRepository kakaoOauthRepository;
+    private final AuthUtil authUtil; // 3. AuthUtil 주입
 
     @PostMapping("/select-role")
+    @Transactional // 4. DB 변경이 있으므로 Transactional 추가
     public ResponseEntity<String> selectRole(
             @RequestParam String role,
-            HttpSession session) {
+            HttpSession session) { // (HttpSession은 이제 사용하지 않지만 호환성을 위해 둠)
 
-        // 선택한 role만 저장 (회원가입 여부는 없어도 됨)
-        session.setAttribute("selectedRole", role.toUpperCase());
-        return ResponseEntity.ok("Role saved to session");
+        // 5. 현재 로그인한 사용자 정보를 가져옵니다.
+        KakaoOauth currentUser = authUtil.getCurrentUser();
+
+        // 6. 요청된 역할(role)에 따라 DB 업데이트
+        if ("MANAGER".equalsIgnoreCase(role)) {
+            currentUser.setRole(DomainEnums.Role.MANAGER); // (KakaoOauth 엔티티에 @Setter 추가 필요)
+            kakaoOauthRepository.save(currentUser);
+            return ResponseEntity.ok("MANAGER role updated.");
+
+        } else if ("USER".equalsIgnoreCase(role)) {
+            // (USER는 기본값이므로 사실상 필요 없지만 로직상 추가)
+            currentUser.setRole(DomainEnums.Role.USER);
+            kakaoOauthRepository.save(currentUser);
+            return ResponseEntity.ok("USER role selected.");
+
+        } else {
+            return ResponseEntity.badRequest().body("Invalid role.");
+        }
     }
 
     @PostMapping("/manager")
