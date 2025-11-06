@@ -17,7 +17,7 @@ spring:
             client-id: 6eda97bf3bccba17cfc112c90731a2c9
             client-secret: quFa6gCqnBZUtwdrUIQab9JBptBQRwEL
             client-name: Kakao
-            redirect-uri: "{baseUrl}/login/oauth2/code/kakao"
+            redirect-uri: "https://back-tikitta.duckdns.org/login/oauth2/code/kakao"
             authorization-grant-type: authorization_code
             client-authentication-method: client_secret_post
             scope:
