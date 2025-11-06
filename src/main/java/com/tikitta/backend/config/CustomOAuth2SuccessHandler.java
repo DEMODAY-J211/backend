@@ -21,35 +21,30 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
                                         HttpServletResponse response,
                                         Authentication authentication) throws IOException {
 
-        // 1. Service가 반환한 '커스텀' OAuth2User 객체 가져오기
+        String frontendBaseUrl = "http://localhost:5173";
+
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
         Map<String, Object> attributes = oAuth2User.getAttributes();
 
-        // 2. Service가 넣어준 속성 꺼내기 (안전하게)
         Object isSignupObj = attributes.get("isSignup");
         boolean isSignup = (isSignupObj instanceof Boolean) ? (Boolean) isSignupObj : false;
 
         Object roleObj = attributes.get("userRole");
-        String role = (roleObj instanceof String) ? (String) roleObj : "USER"; // 기본값 USER
+        String role = (roleObj instanceof String) ? (String) roleObj : "USER";
 
         String redirectUrl;
 
-        // 1. [회원가입 플로우]
         if (isSignup) {
-            // 👇 신규 회원이면 무조건 /select-role (프론트엔드 페이지)로 보냅니다.
-            redirectUrl = "/select-role";
-        }
-        // 2. [로그인 플로우]
-        else {
+            redirectUrl = frontendBaseUrl + "/select-role";
+        } else {
             if ("MANAGER".equalsIgnoreCase(role)) {
-                redirectUrl = "/manager/main";
+                redirectUrl = frontendBaseUrl + "/manager/main";
             } else {
-                // 기존 유저 -> 이전에 방문했던 managerId의 main으로
-                redirectUrl = getDefaultUserRedirectUrl(request.getSession(false));
+                String relativePath = getDefaultUserRedirectUrl(request.getSession(false));
+                redirectUrl = frontendBaseUrl + relativePath;
             }
         }
 
-        // 5. 사용 완료한 세션 속성 정리
         HttpSession session = request.getSession(false);
         if (session != null) {
             session.removeAttribute("selectedRole");
@@ -60,13 +55,9 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
     }
 
-    /**
-     * USER의 리다이렉트 URL을 결정하는 헬퍼 메소드
-     */
     private String getDefaultUserRedirectUrl(HttpSession session) {
         String managerId = null;
         if (session != null) {
-            // ManagerIdSaveFilter가 저장한 세션 값 확인
             Object managerIdObj = session.getAttribute("LAST_VISITED_MANAGER_ID");
             if (managerIdObj instanceof String) {
                 managerId = (String) managerIdObj;
@@ -74,11 +65,9 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
         }
 
         if (managerId != null) {
-            // 저장된 managerId가 있으면 해당 main으로
             return "/user/" + managerId + "/main";
         } else {
-            // (예외 상황) 저장된 managerId가 없으면 테스트용 1번으로
-            return "/user/1/main"; // (또는 "/" 루트 페이지)
+            return "/user/1/main";
         }
     }
 }
