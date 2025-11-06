@@ -57,7 +57,8 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3000", // React 기본 포트
                 "http://localhost:8081", // 다른 흔한 포트
-                "http://localhost:5173"  // Vite 기본 포트
+                "http://localhost:5173",  // Vite 기본 포트
+                "https://localhost:5173"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
