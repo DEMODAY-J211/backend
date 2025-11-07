@@ -1,0 +1,64 @@
+name: deploy.yml
+on:
+  push:
+    branches:
+      - main
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest # GitHub Actions가 사용할 환경
+
+    steps:
+      # 1. 저장소 코드 체크아웃
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. SSH 접속 및 배포 스크립트 실행
+      - name: Deploy via SSH and Restart Server
+        uses: appleboy/ssh-action@v1.0.1
+        with:
+          # GitHub Secrets에 등록된 정보 사용
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22 # 기본 SSH 포트
+
+          # 💡 EC2 서버에서 실행될 배포 명령어
+          # [프로젝트 경로], [서비스 이름]을 실제 값으로 변경하세요.
+          script: |
+            # 서버에 접속하여 실행할 프로젝트 디렉토리 경로
+            PROJECT_DIR="/backend" 
+            JAR_NAME="backend-0.0.1-SNAPSHOT.jar" # 빌드 후 생성되는 JAR 파일 이름
+            
+            echo "== 1. 프로젝트 디렉토리로 이동 =="
+            cd ${PROJECT_DIR}
+            
+            echo "== 2. 최신 코드 Pull =="
+            git pull origin main
+            
+            echo "== 3. gradlew 실행 권한 부여 (권한 문제 방지) =="
+            # 재배포 시 권한 오류를 막기 위해 추가합니다.
+            chmod +x ./gradlew
+            
+            echo "== 4. 프로젝트 빌드 (-x test 포함) =="
+            ./gradlew clean build -x test
+            
+            echo "== 5. 기존 Java 프로세스 종료 (Shutdown) =="
+            # 현재 실행 중인 JAR 파일을 포함하는 프로세스 PID 찾기
+            CURRENT_PID=$(ps aux | grep java | grep ${JAR_NAME} | grep -v grep | awk '{print $2}')
+            
+            if [ -z "$CURRENT_PID" ]; then
+            echo "실행 중인 애플리케이션 없음. 새로 시작합니다."
+            else
+          echo "기존 프로세스 PID: ${CURRENT_PID} 종료 중..."
+            kill -9 $CURRENT_PID
+            echo "종료 완료."
+            # kill 명령 후 완전히 종료될 때까지 잠시 대기
+            sleep 5
+            fi
+            
+            echo "== 6. 새 JAR 파일 실행 (Start-up) =="
+            # nohup으로 백그라운드에서 실행하고, 로그를 app.log에 기록
+            nohup java -jar build/libs/${JAR_NAME} > app.log 2>&1 &
+            
+            echo "Deployment finished successfully. New process started."
