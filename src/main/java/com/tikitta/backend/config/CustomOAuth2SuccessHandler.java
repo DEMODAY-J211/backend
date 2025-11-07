@@ -43,7 +43,7 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
                 redirectUrl = frontendBaseUrl + "/manageshow";
             } else {
                 String relativePath = getDefaultUserRedirectUrl(request.getSession(false));
-                redirectUrl = frontendBaseUrl + "/homeuser";
+                redirectUrl = frontendBaseUrl + "/auth/kakao/callback";
             }
         }
 
@@ -76,7 +76,7 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
             return "/user/" + managerId + "/main";
         } else {
             // (예외 상황) 저장된 managerId가 없으면 테스트용 1번으로
-            return "/user/1/main"; // (또는 "/" 루트 페이지)
+            return "/auth/kakao/callback"; // (또는 "/" 루트 페이지)
         }
     }
 }
