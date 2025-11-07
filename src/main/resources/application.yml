@@ -33,6 +33,6 @@ server:
   servlet:
     session:
       cookie:
-        same-site: lax
+        same-site: none
         http-only: true
-        secure: false
+        secure: true
