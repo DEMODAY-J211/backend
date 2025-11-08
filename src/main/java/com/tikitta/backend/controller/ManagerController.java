@@ -143,7 +143,7 @@ public class ManagerController {
     }
 
     //좌석별 조회
-    @GetMapping("/{showId}/checkin")
+    @GetMapping("/shows/{showId}/checkin")
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<List<ReservationSeatListResponse>>> getShowSeats(
             @PathVariable Long showId,
@@ -153,7 +153,7 @@ public class ManagerController {
     }
 
     //좌석별 상태 수정
-    @PatchMapping("/{showId}/checkin")
+    @PatchMapping("/shows/{showId}/checkin")
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<CheckinStatusUpdateResponse>> updateCheckinStatus(
             @PathVariable Long showId,
@@ -170,7 +170,7 @@ public class ManagerController {
         }
     }
 
-    @GetMapping("/{showId}/checkin/search")
+    @GetMapping("/shows/{showId}/checkin/search")
     public ResponseEntity<List<ReservationSeatListResponse>> getReservationSeatList(
             @PathVariable("showId") Long showId,
             @RequestParam(value = "showtimeId", required = false) Long showtimeId,
