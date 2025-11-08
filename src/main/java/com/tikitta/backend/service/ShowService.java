@@ -194,9 +194,9 @@ public class ShowService {
         ShowTime showTime = showTimeRepository.findById(showtimeId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회차 ID입니다: " + showtimeId));
 
-        if (!showTime.getShow().getManager().getId().equals(manager.getId())) {
-            throw new AccessDeniedException("해당 공연에 대한 접근 권한이 없습니다.");
-        }
+//        if (!showTime.getShow().getManager().getId().equals(manager.getId())) {
+//            throw new AccessDeniedException("해당 공연에 대한 접근 권한이 없습니다.");
+//        }
 
         //해당 회차의 모든 예약을 조회
         List<Reservation> reservations=reservationRepository.findByShowTime(showTime);
