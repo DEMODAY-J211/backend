@@ -133,6 +133,13 @@ public class DataInitializer implements CommandLineRunner {
                 .build();
         messageRepository.save(testMessage);
 
+        ShowTime showTime0 = ShowTime.builder()
+                .show(testShow)
+                .startAt(LocalDateTime.now().withHour(8).withMinute(0))
+                .endAt(LocalDateTime.now().withHour(21).withMinute(0))
+                .bookingEndAt(LocalDateTime.now().plusDays(9))
+                .remainSeatCount(100L)
+                .build();
         ShowTime showTime1 = ShowTime.builder()
                 .show(testShow)
                 .startAt(LocalDateTime.now().plusDays(10).withHour(19).withMinute(0))
@@ -147,7 +154,7 @@ public class DataInitializer implements CommandLineRunner {
                 .bookingEndAt(LocalDateTime.now().plusDays(10))
                 .remainSeatCount(100L)
                 .build();
-        showTimeRepository.saveAll(List.of(showTime1, showTime2));
+        showTimeRepository.saveAll(List.of(showTime0, showTime1, showTime2));
         // ◀ saveAll 사용
         ShowTime showTime21 = ShowTime.builder()
                 .show(testShow2)

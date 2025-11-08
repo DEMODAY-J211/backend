@@ -19,6 +19,8 @@ public class UserController {
     @GetMapping("/main")
     public ResponseEntity<ApiResponse<ShowListResponse>> getMainPage(@PathVariable Long managerId,
         Authentication authentication){
+
+
         boolean isLoggedIn = authentication != null && authentication.isAuthenticated();
 
         ShowListResponse data;
@@ -54,6 +56,9 @@ public class UserController {
     public ResponseEntity<ApiResponse<List<MyReservationItemDto>>> getMyShowReservations(
             @PathVariable Long managerId, // ◀ 쿼리 파라미터
             Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("로그인된 사용자만 접근할 수 있습니다.");
+        }
 
         List<MyReservationItemDto> data = userService.getMyReservations(managerId, authentication);
         if (data.isEmpty()) {

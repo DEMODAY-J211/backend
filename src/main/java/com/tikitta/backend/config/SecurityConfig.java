@@ -36,7 +36,7 @@ public class SecurityConfig {
                                 "/auth/**" // /auth/kakao/dev-login 등 포함
                         ).permitAll()
                         .requestMatchers("/manager/**").hasRole("MANAGER")
-                        .requestMatchers("/user/**").hasRole("USER")
+                        .requestMatchers("/user/**/myshow").hasRole("USER")
                         .anyRequest().authenticated()
                 )
 
