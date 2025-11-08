@@ -2,6 +2,7 @@ spring:
   # 1. (추가) DB 설정 (application.properties에서 가져옴)
   datasource:
     url: jdbc:mysql://localhost:3306/tikitta?serverTimezone=Asia/Seoul
+    #url: jdbc:mysql://15.164.218.55:3306/tikitta?serverTimezone=Asia/Seoul
     username: tikkita
     password: 1234
     driver-class-name: com.mysql.cj.jdbc.Driver
