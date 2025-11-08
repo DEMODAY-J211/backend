@@ -21,6 +21,9 @@ public class UserController {
 
         // 1. Service를 호출하여 DTO 데이터 받기
         ShowListResponse data = userService.getUserMainPage(managerId);
+        if (data == null || data.isEmpty()) {
+            return ResponseEntity.ok(new ApiResponse<>(new ShowListResponse()));
+        }
 
         // 2. ApiResponse 래퍼로 감싸서 반환
         return ResponseEntity.ok(new ApiResponse<>(data));
