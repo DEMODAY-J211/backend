@@ -84,10 +84,21 @@ public class UserBookingService {
     }
 
     //예매 총 가격 계산
-    public int calculateTotalPrice(Long ticketOptionId, Integer quantity){
+    // 예매 총 가격 계산 (안전하게)
+    public int calculateTotalPrice(Long ticketOptionId, Integer quantity) {
+        if (ticketOptionId == null || quantity == null || quantity <= 0) {
+            throw new IllegalArgumentException("티켓 옵션 ID와 수량은 필수입니다.");
+        }
+
         TicketOption ticketOption = ticketOptionRepository.findById(ticketOptionId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 티켓 옵션입니다."));
-        return ticketOption.getPrice() * quantity;
+
+        Integer price = ticketOption.getPrice();
+        if (price == null) {
+            throw new IllegalStateException("티켓 옵션의 가격 정보가 없습니다.");
+        }
+
+        return price * quantity;
     }
 
     /**
