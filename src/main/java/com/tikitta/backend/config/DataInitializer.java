@@ -30,7 +30,7 @@ public class DataInitializer implements CommandLineRunner {
     @Transactional
     public void run(String... args) throws Exception {
 
-        String testManagerEmail = "test_manager@kakao.com";
+        String testManagerEmail = "22test_manager@kakao.com";
 
         if (kakaoOauthRepository.findByEmail(testManagerEmail).isPresent()) {
             System.out.println("--- 테스트 데이터가 이미 존재합니다. ---");
@@ -122,7 +122,7 @@ public class DataInitializer implements CommandLineRunner {
                 .saleMethod(DomainEnums.SaleMethod.Select_by_User)
                 .status(DomainEnums.ShowStatus.PUBLISHED)
                 .build();
-        showsRepository.save(testShow);
+        showsRepository.save(testShow2);
 
         Message testMessage = Message.builder()
                 .show(testShow)
@@ -207,7 +207,7 @@ public class DataInitializer implements CommandLineRunner {
 
         // --- 👇 [수정] Reservation 및 ReservationItem을 회차 1에만 연결 ---
         Reservation testReservation = Reservation.builder()
-                .reservationNumber("US25102220112")
+                .reservationNumber("US251022201012")
                 .user(userOauth)
                 .showTime(showTime1) // ◀ 회차 1에 예매
                 .ticketOption(rSeat) // ◀◀◀ R석 티켓 옵션 연결
