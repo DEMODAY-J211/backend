@@ -13,7 +13,6 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/user/{managerId}")
 public class UserController {
-
     private final UserService userService;
 
     @GetMapping("/main")
