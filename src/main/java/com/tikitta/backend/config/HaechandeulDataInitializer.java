@@ -31,18 +31,21 @@ public class HaechandeulDataInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) throws Exception {
-        String managerEmail = "haechandeul@naver.com";
+        createTestDataForManager("haechandeul@naver.com", "전해찬", "해찬들 공연기획", "해찬들을 위한 테스트용 매니저입니다.", "HC");
+        createTestDataForManager("cellano300@gmail.com", "이예나", "셀라노 공연기획", "셀라노를 위한 테스트용 매니저입니다.", "CL");
+    }
 
+    private void createTestDataForManager(String managerEmail, String userName, String managerName, String managerIntroduction, String reservationPrefix) {
         KakaoOauth managerOauth = kakaoOauthRepository.findByEmail(managerEmail)
                 .orElseGet(() -> {
                     System.out.println("--- " + managerEmail + " 사용자가 존재하지 않아 새로 생성합니다. ---");
-                    return KakaoOauth.builder()
-                           .email(managerEmail)
-                           .name("전해찬")
-                           .role(DomainEnums.Role.USER)
-                           .createdAt(LocalDateTime.now())
-                           .visitedPath(DomainEnums.VisitedPath.ETC)
-                           .build();
+                    return kakaoOauthRepository.save(KakaoOauth.builder()
+                            .email(managerEmail)
+                            .name(userName)
+                            .role(DomainEnums.Role.USER)
+                            .createdAt(LocalDateTime.now())
+                            .visitedPath(DomainEnums.VisitedPath.ETC)
+                            .build());
                 });
 
         if (managerOauth.getRole() != DomainEnums.Role.MANAGER) {
@@ -59,17 +62,17 @@ public class HaechandeulDataInitializer implements CommandLineRunner {
 
         System.out.println("--- " + managerEmail + " 사용자의 테스트 데이터 생성을 시작합니다. ---");
 
-        Manager haechandeulManager = Manager.builder()
+        Manager newManager = Manager.builder()
                 .kakaoOauth(managerOauth)
-                .name("해찬들 공연기획")
-                .introduction("해찬들을 위한 테스트용 매니저입니다.")
-                .urls(List.of("http://haechandeul.com"))
+                .name(managerName)
+                .introduction(managerIntroduction)
+                .urls(List.of("http://example.com"))
                 .build();
-        managerRepository.save(haechandeulManager);
+        managerRepository.save(newManager);
 
         Location newLocation = Location.builder()
-                .name("해찬들 아트센터")
-                .address("서울시 강남구 해찬대로 55")
+                .name(userName + " 아트센터")
+                .address("서울시 강남구 테헤란로 123")
                 .totalSeats(150)
                 .floor(2)
                 .type(DomainEnums.LocationType.SEATED)
@@ -79,19 +82,19 @@ public class HaechandeulDataInitializer implements CommandLineRunner {
         // 좌석 5개 생성
         List<Seat> seats = new ArrayList<>();
         for (int i = 1; i <= 5; i++) {
-            seats.add(Seat.builder().location(newLocation).floor(1).section("B").seatRow("1").seatCol(String.valueOf(i)).seatNumber("B" + i).build());
+            seats.add(Seat.builder().location(newLocation).floor(1).section("A").seatRow("1").seatCol(String.valueOf(i)).seatNumber("A" + i).build());
         }
         seatRepository.saveAll(seats);
 
         Shows newShow = Shows.builder()
-                .manager(haechandeulManager)
+                .manager(newManager)
                 .location(newLocation)
-                .title("해찬들의 첫번째 공연")
-                .posterUrl("http://example.com/haechandeul_poster.jpg")
+                .title(userName + "의 첫번째 공연")
+                .posterUrl("http://example.com/poster.jpg")
                 .bookingStartAt(LocalDateTime.now().plusDays(2))
                 .bankName(DomainEnums.Bank.HANA)
                 .bankAccountNumber("111-222-333333")
-                .bankDepositorName("전해찬")
+                .bankDepositorName(userName)
                 .saleMethod(DomainEnums.SaleMethod.Select_by_User)
                 .status(DomainEnums.ShowStatus.PUBLISHED)
                 .build();
@@ -100,7 +103,7 @@ public class HaechandeulDataInitializer implements CommandLineRunner {
         Message newMessage = Message.builder()
                 .show(newShow)
                 .paymentGuide("결제 안내: 2시간 내 미입금 시 자동 취소됩니다.")
-                .bookingConfirmation("예매 확정: 해찬들의 공연 예매가 확정되었습니다.")
+                .bookingConfirmation("예매 확정: " + userName + "의 공연 예매가 확정되었습니다.")
                 .bookingCustom("환영합니다! 즐거운 시간 되세요.")
                 .qrGuide("QR 안내: 입장 시 본인 확인용 QR 코드를 준비해주세요.")
                 .build();
@@ -127,44 +130,50 @@ public class HaechandeulDataInitializer implements CommandLineRunner {
         // 테스트 유저 5명 생성
         List<KakaoOauth> testUsers = new ArrayList<>();
         for (int i = 1; i <= 5; i++) {
-            testUsers.add(KakaoOauth.builder()
-                    .email("testuser" + i + "@example.com")
-                    .name("테스트유저" + i)
-                    .role(DomainEnums.Role.USER)
-                    .createdAt(LocalDateTime.now())
-                    .visitedPath(DomainEnums.VisitedPath.ETC)
-                    .build());
+            // 이메일 중복을 피하기 위해 고유한 이메일 생성
+            String userEmail = "testuser" + reservationPrefix + i + "@example.com";
+            if (kakaoOauthRepository.findByEmail(userEmail).isEmpty()) {
+                testUsers.add(KakaoOauth.builder()
+                        .email(userEmail)
+                        .name("테스트유저" + i)
+                        .role(DomainEnums.Role.USER)
+                        .createdAt(LocalDateTime.now())
+                        .visitedPath(DomainEnums.VisitedPath.ETC)
+                        .build());
+            }
         }
         kakaoOauthRepository.saveAll(testUsers);
-
+        
         // 예매 데이터 생성
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < Math.min(testUsers.size(), showSeats.size()); i++) {
             KakaoOauth user = testUsers.get(i);
             ShowSeat showSeat = showSeats.get(i);
 
-            Reservation reservation = Reservation.builder()
-                    .reservationNumber("HC" + System.currentTimeMillis() + i)
-                    .user(user)
-                    .showTime(newShowTime1)
-                    .ticketOption(vipSeat)
-                    .quantity(1)
-                    .totalPrice(vipSeat.getPrice())
-                    .phone("010-0000-000" + i)
-                    .refundAccountNumber("123-456-789" + i)
-                    .status(DomainEnums.ReservationStatus.CONFIRMED)
-                    .createdAt(LocalDateTime.now())
-                    .build();
-            reservationRepository.save(reservation);
+            if (showSeat.isAvailable()) {
+                Reservation reservation = Reservation.builder()
+                        .reservationNumber(reservationPrefix + System.currentTimeMillis() + i)
+                        .user(user)
+                        .showTime(newShowTime1)
+                        .ticketOption(vipSeat)
+                        .quantity(1)
+                        .totalPrice(vipSeat.getPrice())
+                        .phone("010-1111-111" + i)
+                        .refundAccountNumber("987-654-321" + i)
+                        .status(DomainEnums.ReservationStatus.CONFIRMED)
+                        .createdAt(LocalDateTime.now())
+                        .build();
+                reservationRepository.save(reservation);
 
-            ReservationItem item = ReservationItem.builder()
-                    .reservation(reservation)
-                    .showSeat(showSeat)
-                    .status(DomainEnums.ReservationStatus.CONFIRMED)
-                    .build();
-            reservationItemRepository.save(item);
+                ReservationItem item = ReservationItem.builder()
+                        .reservation(reservation)
+                        .showSeat(showSeat)
+                        .status(DomainEnums.ReservationStatus.CONFIRMED)
+                        .build();
+                reservationItemRepository.save(item);
 
-            showSeat.reserve(); // 좌석 예매 처리
-            showSeatRepository.save(showSeat);
+                showSeat.reserve(); // 좌석 예매 처리
+                showSeatRepository.save(showSeat);
+            }
         }
 
         System.out.println("--- " + managerEmail + " 사용자의 테스트 데이터 생성 완료! ---");
