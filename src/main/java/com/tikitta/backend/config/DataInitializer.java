@@ -110,6 +110,20 @@ public class DataInitializer implements CommandLineRunner {
                 .build();
         showsRepository.save(testShow);
 
+        Shows testShow2 = Shows.builder()
+                .manager(testManager)
+                .location(testLocation)
+                .title("끝난공연")
+                .posterUrl("http://example.com/poster.jpg")
+                .bookingStartAt(LocalDateTime.now().plusDays(1))
+                .bankName(DomainEnums.Bank.KAKAO)
+                .bankAccountNumber("123-456-789")
+                .bankDepositorName("테스트매니저")
+                .saleMethod(DomainEnums.SaleMethod.Select_by_User)
+                .status(DomainEnums.ShowStatus.PUBLISHED)
+                .build();
+        showsRepository.save(testShow);
+
         Message testMessage = Message.builder()
                 .show(testShow)
                 .paymentGuide("입금 안내: 1시간 내 미입금 시 자동 취소됩니다.")
@@ -133,7 +147,23 @@ public class DataInitializer implements CommandLineRunner {
                 .bookingEndAt(LocalDateTime.now().plusDays(10))
                 .remainSeatCount(100L)
                 .build();
-        showTimeRepository.saveAll(List.of(showTime1, showTime2)); // ◀ saveAll 사용
+        showTimeRepository.saveAll(List.of(showTime1, showTime2));
+        // ◀ saveAll 사용
+        ShowTime showTime21 = ShowTime.builder()
+                .show(testShow2)
+                .startAt(LocalDateTime.now().minusDays(11).withHour(19).withMinute(0))
+                .endAt(LocalDateTime.now().minusDays(11).withHour(21).withMinute(0))
+                .bookingEndAt(LocalDateTime.now().minusDays(10))
+                .remainSeatCount(100L)
+                .build();
+        ShowTime showTime22 = ShowTime.builder()
+                .show(testShow2)
+                .startAt(LocalDateTime.now().minusDays(10).withHour(15).withMinute(0)) // 11일 뒤 15:00
+                .endAt(LocalDateTime.now().minusDays(10).withHour(17).withMinute(0))
+                .bookingEndAt(LocalDateTime.now().minusDays(9))
+                .remainSeatCount(100L)
+                .build();
+        showTimeRepository.saveAll(List.of(showTime21, showTime22));// ◀ saveAll 사용
 
         TicketOption rSeat = TicketOption.builder()
                 .show(testShow)
