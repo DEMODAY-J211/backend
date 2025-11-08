@@ -30,7 +30,7 @@ public class DataInitializer implements CommandLineRunner {
     @Transactional
     public void run(String... args) throws Exception {
 
-        String testManagerEmail = "42test_manager@kakao.com";
+        String testManagerEmail = "52test_manager@kakao.com";
 
         if (kakaoOauthRepository.findByEmail(testManagerEmail).isPresent()) {
             System.out.println("--- 테스트 데이터가 이미 존재합니다. ---");
@@ -101,7 +101,7 @@ public class DataInitializer implements CommandLineRunner {
                 .location(testLocation)
                 .title("테스트 공연 1")
                 .posterUrl("http://example.com/poster.jpg")
-                .bookingStartAt(LocalDateTime.now().withHour(10).withMinute(0))
+                .bookingStartAt(LocalDateTime.now().minusDays(1).withHour(10).withMinute(0))
                 .bankName(DomainEnums.Bank.KAKAO)
                 .bankAccountNumber("123-456-789")
                 .bankDepositorName("테스트매니저")
@@ -214,7 +214,7 @@ public class DataInitializer implements CommandLineRunner {
 
         // --- 👇 [수정] Reservation 및 ReservationItem을 회차 1에만 연결 ---
         Reservation testReservation = Reservation.builder()
-                .reservationNumber("US25102022201012")
+                .reservationNumber("US251020022201012")
                 .user(userOauth)
                 .showTime(showTime1) // ◀ 회차 1에 예매
                 .ticketOption(rSeat) // ◀◀◀ R석 티켓 옵션 연결
@@ -225,7 +225,9 @@ public class DataInitializer implements CommandLineRunner {
                 .status(DomainEnums.ReservationStatus.CONFIRMED)
                 .createdAt(LocalDateTime.now())
                 .build();
-        reservationRepository.save(testReservation);
+
+
+        reservationRepository.saveAll(List.of(testReservation));
 
         ReservationItem item1 = ReservationItem.builder()
                 .reservation(testReservation)
