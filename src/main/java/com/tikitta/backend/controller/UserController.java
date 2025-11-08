@@ -43,7 +43,7 @@ public class UserController {
 
     @GetMapping("/myshow")
     public ResponseEntity<ApiResponse<List<MyReservationItemDto>>> getMyShowReservations(
-            @RequestParam Long managerId, // ◀ 쿼리 파라미터
+            @PathVariable Long managerId, // ◀ 쿼리 파라미터
             Authentication authentication) {
 
         List<MyReservationItemDto> data = userService.getMyReservations(managerId, authentication);
