@@ -16,8 +16,13 @@ public class ShowItemDto {
     private String showLocation;
     private String showPosterPicture;
     private boolean isReservable;
+    private boolean reserved;
 
     public ShowItemDto(Shows show){
+        this(show, false);
+    }
+
+    public ShowItemDto(Shows show, boolean reserved) {
         this.showId = show.getId();
         this.showTitle = show.getTitle();
         this.showPosterPicture = show.getPosterUrl();
@@ -26,13 +31,13 @@ public class ShowItemDto {
                 show.getBookingStartAt() != null &&
                 show.getBookingStartAt().isBefore(LocalDateTime.now());
 
-        // 1. startAt 기준으로 리스트를 정렬하여 가장 빠른 ShowTime을 찾음
-        ShowTime earliestShowTime = show.getShowTimes().stream()
+        // 가장 빠른 공연 시간 설정
+        show.getShowTimes().stream()
                 .min(Comparator.comparing(ShowTime::getStartAt))
-                .get(); // ◀ .isEmpty() 체크를 통과했으므로 .get()은 안전
+                .ifPresent(earliest -> this.showTimes = earliest.getStartAt());
 
-        // 2. "YYYY-MM-DD" 형식으로 포맷팅
-        this.showTimes = earliestShowTime.getStartAt();
+        // ✅ 로그인한 사용자의 예매 여부 반영
+        this.reserved = reserved;
 
     }
 }

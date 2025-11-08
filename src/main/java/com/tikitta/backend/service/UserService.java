@@ -102,4 +102,21 @@ public class UserService {
         // 3. DTO로 변환하여 반환
         return new MobileTicketResponse(reservation);
     }
+
+    public ShowListResponse getUserMainPageWithReservationStatus(Long managerId, String userEmail) {
+
+        Manager manager = managerRepository.findById(managerId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 매니저입니다. ID: " + managerId));
+        // 2. 매니저 공연 목록 조회
+        List<Shows> showsList = showsRepository.findByManager(manager);
+
+        // 3. 현재 유저의 예매 공연 ID 목록 조회
+        List<Long> reservedShowIds = reservationRepository.findReservedShowIdsByUserEmail(userEmail);
+
+        // 4. DTO 변환 시 reserved 여부 반영
+        List<ShowItemDto> showItemList = showsList.stream()
+                .map(show -> new ShowItemDto(show, reservedShowIds.contains(show.getId())))
+                .collect(Collectors.toList());
+
+        return new ShowListResponse(manager, showItemList);    }
 }

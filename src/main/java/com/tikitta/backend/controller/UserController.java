@@ -17,10 +17,19 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/main")
-    public ResponseEntity<ApiResponse<ShowListResponse>> getMainPage(@PathVariable Long managerId){
+    public ResponseEntity<ApiResponse<ShowListResponse>> getMainPage(@PathVariable Long managerId,
+        Authentication authentication){
+        boolean isLoggedIn = authentication != null && authentication.isAuthenticated();
 
-        // 1. Service를 호출하여 DTO 데이터 받기
-        ShowListResponse data = userService.getUserMainPage(managerId);
+        ShowListResponse data;
+        if (isLoggedIn) {
+            // 로그인한 사용자 이메일 가져오기
+            String userEmail = authentication.getName();
+            data = userService.getUserMainPageWithReservationStatus(managerId, userEmail);
+        } else {
+            data = userService.getUserMainPage(managerId);
+        }
+
         if (data == null || data.isEmpty()) {
             return ResponseEntity.ok(new ApiResponse<>(new ShowListResponse()));
         }

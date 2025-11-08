@@ -8,4 +8,5 @@ import java.util.List;
 
 public interface ShowsRepository extends JpaRepository<Shows, Long> {
     List<Shows> findByManager(Manager manager);
+    List<Shows> findByManagerId(Long managerId);
 }
