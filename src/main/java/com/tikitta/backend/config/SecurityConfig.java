@@ -31,12 +31,12 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/user/*/main",
-                                "/user/*/detail/*",
+                                "/user/*/detail/**",
                                 "/user/*/organization",
                                 "/auth/**" // /auth/kakao/dev-login 등 포함
                         ).permitAll()
-                        .requestMatchers("/manager/**").hasAuthority("MANAGER")
-                        .requestMatchers("/user/*/myshow").hasAuthority("USER")
+                        .requestMatchers("/manager/**").hasRole("MANAGER")
+                        .requestMatchers("/user/*/myshow").hasRole("USER")
                         .anyRequest().authenticated()
                 )
 
