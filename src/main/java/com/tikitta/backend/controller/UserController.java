@@ -40,11 +40,13 @@ public class UserController {
 
     @GetMapping("/myshow")
     public ResponseEntity<ApiResponse<List<MyReservationItemDto>>> getMyShowReservations(
-            @RequestParam Long managerId, // ◀ 쿼리 파라미터
-            @RequestParam String status,  // ◀ 쿼리 파라미터
+            @PathVariable Long managerId, // ◀ 쿼리 파라미터
             Authentication authentication) {
 
-        List<MyReservationItemDto> data = userService.getMyReservations(managerId, status, authentication);
+        List<MyReservationItemDto> data = userService.getMyReservations(managerId, authentication);
+        if (data.isEmpty()) {
+            return ResponseEntity.ok(new ApiResponse<>(List.of()));
+        }
         return ResponseEntity.ok(new ApiResponse<>(data));
     }
 
