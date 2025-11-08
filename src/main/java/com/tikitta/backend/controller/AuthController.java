@@ -89,4 +89,12 @@ public class AuthController {
 
         return ResponseEntity.ok("Successfully logged in as " + email);
     }
+
+    @PatchMapping("/update-role")
+    public ResponseEntity<String> updateRole(@RequestBody Map<String, String> request){
+        String role= request.get("role");
+        authService.updateUserRoleandSession(role);
+        return ResponseEntity.ok("Role updated to " + role.toUpperCase() );
+    }
+
 }
