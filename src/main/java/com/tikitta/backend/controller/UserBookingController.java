@@ -15,6 +15,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.server.ResponseStatusException;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Map;
+
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -108,7 +110,8 @@ public class UserBookingController {
 
         // 3. 로그인 사용자 이름 가져오기
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-        String email = (String) oAuth2User.getAttributes().get("email");
+        Map<String, Object> kakaoAccount = (Map<String, Object>) oAuth2User.getAttributes().get("kakao_account");
+        String email = (String) kakaoAccount.get("email");
         KakaoOauth user = kakaoOauthRepository.findByEmail(email).orElseThrow();
         String userName = user.getName();
 
