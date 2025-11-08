@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -13,7 +14,7 @@ import java.util.List;
 @Builder
 public class CheckinStatusUpdateRequest {
 
-    private List<CheckinStatusUpdateItem> checkinStatusUpdateRequest;
+    private List<CheckinStatusUpdateItem> checkinStatusUpdateRequest = new ArrayList<>();
 
     //일괄 처리를 위해 List로 담음. List에 넣을 객체 생성
     @Getter

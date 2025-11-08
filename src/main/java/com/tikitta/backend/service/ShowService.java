@@ -70,9 +70,9 @@ public class ShowService {
         Shows show = showsRepository.findById(showId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 공연 ID입니다: " + showId));
 
-        if (!show.getManager().getId().equals(manager.getId())) {
-            throw new AccessDeniedException("해당 공연에 대한 접근 권한이 없습니다.");
-        }
+//        if (!show.getManager().getId().equals(manager.getId())) {
+//            throw new AccessDeniedException("해당 공연에 대한 접근 권한이 없습니다.");
+//        }
 
         // 2. 회차 목록 조회 및 정렬
         List<ShowTime> allShowTimes = show.getShowTimes().stream()
