@@ -58,6 +58,9 @@ public class UserService {
 
     public List<MyReservationItemDto> getMyReservations(Long managerId, Authentication authentication) {
 
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new AccessDeniedException("로그인이 필요합니다."); // 500 대신 403 에러를 발생시킴
+        }
         // 1. 로그인 사용자 정보 확인
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
         String email = (String) oAuth2User.getAttributes().get("email");
@@ -82,6 +85,9 @@ public class UserService {
 
     public MobileTicketResponse getMobileTicket(Long reservationId, Authentication authentication) {
 
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new AccessDeniedException("로그인이 필요합니다."); // 500 대신 403 에러를 발생시킴
+        }
         // 1. 예매 정보 조회 (Fetch Join 활용)
         Reservation reservation = reservationRepository.findByIdWithDetails(reservationId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 예매입니다. ID: " + reservationId));
