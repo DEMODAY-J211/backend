@@ -15,7 +15,6 @@ public class MyReservationItemDto {
     private String ticketOptionName;
     private Integer reservationQuantity;
     private String reservationNumber;
-    private DomainEnums.ReservationStatus status; // Enum 타입을 그대로 사용
     private String showPosterPicture;
 
 
@@ -27,7 +26,6 @@ public class MyReservationItemDto {
         this.ticketOptionName = reservation.getTicketOption().getName();
         this.reservationQuantity = reservation.getQuantity();
         this.reservationNumber = reservation.getReservationNumber();
-        this.status = reservation.getStatus();
         this.showPosterPicture = reservation.getShowTime().getShow().getPosterUrl();
     }
 }

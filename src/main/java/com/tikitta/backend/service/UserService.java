@@ -56,7 +56,7 @@ public class UserService {
         return new ManagerOrgResponse(manager);
     }
 
-    public List<MyReservationItemDto> getMyReservations(Long managerId, String status, Authentication authentication) {
+    public List<MyReservationItemDto> getMyReservations(Long managerId, Authentication authentication) {
 
         // 1. 로그인 사용자 정보 확인
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
@@ -71,14 +71,8 @@ public class UserService {
         LocalDateTime now = LocalDateTime.now(); // 현재 시간
         List<Reservation> reservations;
 
-        // 3. status 값에 따라 다른 쿼리 메소드 호출
-        if ("upcoming".equalsIgnoreCase(status)) {
-            reservations = reservationRepository.findUpcomingReservationsByUserAndManager(user, manager, now);
-        } else if ("past".equalsIgnoreCase(status)) {
-            reservations = reservationRepository.findPastReservationsByUserAndManager(user, manager, now);
-        } else {
-            throw new IllegalArgumentException("status 파라미터는 'upcoming' 또는 'past' 여야 합니다.");
-        }
+
+        reservations = reservationRepository.findUpcomingReservationsByUserAndManager(user, manager, now);
 
         // 4. 조회된 Reservation 리스트를 DTO 리스트로 변환하여 반환
         return reservations.stream()
