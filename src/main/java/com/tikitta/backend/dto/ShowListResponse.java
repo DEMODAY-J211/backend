@@ -7,11 +7,13 @@ import com.tikitta.backend.domain.Shows;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 
+@NoArgsConstructor
 @Getter
 @Builder
 @AllArgsConstructor
