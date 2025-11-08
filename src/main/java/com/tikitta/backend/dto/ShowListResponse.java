@@ -25,4 +25,8 @@ public class ShowListResponse {
         this.managerName = manager.getName();
         this.showList = showList;
     }
+
+    public boolean isEmpty() {
+        return showList == null || showList.isEmpty();
+    }
 }
