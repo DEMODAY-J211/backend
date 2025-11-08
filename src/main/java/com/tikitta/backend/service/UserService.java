@@ -97,7 +97,9 @@ public class UserService {
 
         // 2. 접근 권한 확인 (로그인한 사용자의 예매인지)
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-        String email = (String) oAuth2User.getAttributes().get("email");
+        Map<String, Object> kakaoAccount = (Map<String, Object>) oAuth2User.getAttributes().get("kakao_account");
+        String email = (String) kakaoAccount.get("email");
+
         if (!reservation.getUser().getEmail().equals(email)) {
             throw new AccessDeniedException("자신의 예매 내역만 조회할 수 있습니다.");
         }
