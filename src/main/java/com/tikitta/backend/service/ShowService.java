@@ -238,9 +238,9 @@ public class ShowService {
 
         Shows show = showsRepository.findById(showId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 공연입니다."));
-        if (!show.getManager().getId().equals(manager.getId())) {
-            throw new AccessDeniedException("해당 공연에 대한 접근 권한이 없습니다.");
-        }
+//        if (!show.getManager().getId().equals(manager.getId())) {
+//            throw new AccessDeniedException("해당 공연에 대한 접근 권한이 없습니다.");
+//        }
 
         //회차 검증
         ShowTime showTime = showTimeRepository.findById(showtimeId).orElseThrow(()-> new IllegalArgumentException("존재하지 않은 회차의 ID입니다."));
