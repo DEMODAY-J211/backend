@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -63,7 +64,9 @@ public class UserService {
         }
         // 1. 로그인 사용자 정보 확인
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-        String email = (String) oAuth2User.getAttributes().get("email");
+        Map<String, Object> kakaoAccount = (Map<String, Object>) oAuth2User.getAttributes().get("kakao_account");
+        String email = (String) kakaoAccount.get("email");
+        //String email = (String) oAuth2User.getAttributes().get("email");
         KakaoOauth user = kakaoOauthRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("로그인된 사용자 정보를 찾을 수 없습니다."));
 
