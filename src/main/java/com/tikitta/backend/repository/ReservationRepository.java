@@ -90,4 +90,8 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long> {
     @Modifying
     @Query("UPDATE Reservation r SET r.status = :status WHERE r.id = :id")
     void updateStatus(@Param("id") Long id, @Param("status") DomainEnums.ReservationStatus status);
+
+
+    @Query("SELECT DISTINCT r.showTime.show.id FROM Reservation r WHERE r.user.email = :email")
+    List<Long> findReservedShowIdsByUserEmail(@Param("email") String email);
 }
