@@ -12,6 +12,7 @@ import com.tikitta.backend.dto.ReservationStatusUpdateResponse;
 import com.tikitta.backend.repository.KakaoOauthRepository;
 import com.tikitta.backend.repository.ManagerRepository;
 import com.tikitta.backend.service.CheckInService;
+import com.tikitta.backend.service.ManagerService;
 import com.tikitta.backend.service.ShowService;
 import java.util.LinkedHashMap;
 
@@ -37,6 +38,7 @@ public class ManagerController {
     private final ShowService showService;
     private final CheckInService checkInService;
     private final AuthUtil authUtil; // 2. AuthUtil 주입
+    private final ManagerService managerService;
 
     @GetMapping("/main")
     @PreAuthorize("hasRole('MANAGER')")
@@ -178,5 +180,12 @@ public class ManagerController {
     ) {
         List<ReservationSeatListResponse> response = showService.getReservationSeatList(showId, showtimeId, keyword);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/shows/venues")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<ApiResponse<List<LocationLikeResponse>>> getLikedLocations() {
+        List<LocationLikeResponse> likedLocations = managerService.getLikedLocations();
+        return ResponseEntity.ok(new ApiResponse<>(likedLocations));
     }
 }
