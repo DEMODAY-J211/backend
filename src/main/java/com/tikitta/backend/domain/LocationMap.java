@@ -43,4 +43,8 @@ public class LocationMap {
         this.seatMapData = seatMapData;
         this.stageCoordinates = stageCoordinates;
     }
+
+    public void setSeatMapData(String seatMapData) {
+        this.seatMapData = seatMapData;
+    }
 }
