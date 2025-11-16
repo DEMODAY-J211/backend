@@ -31,7 +31,6 @@ public class Location {
     @Column(name = "location_seat_picture")
     private String seatPictureUrl;
 
-    // 참고: 엑셀 파일은 보통 S3 같은 파일 스토리지에 저장하고 URL만 DB에 저장합니다.
     @Column(name = "location_seat_excel")
     private String seatExcelUrl;
 
@@ -47,6 +46,9 @@ public class Location {
 
     @OneToMany(mappedBy = "location", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Seat> seats = new ArrayList<>();
+
+    @OneToOne(mappedBy = "location", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private LocationMap locationMap;
 
     @Builder
     public Location(String name, String address, String addressDetail, String seatPictureUrl, String seatExcelUrl, Integer totalSeats, Integer floor, DomainEnums.LocationType type) {

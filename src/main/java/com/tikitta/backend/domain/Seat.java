@@ -28,21 +28,21 @@ public class Seat {
     private String section;
 
     @Column(name = "seat_row", nullable = false)
-    private String seatRow; // 행(row)은 'A', 'B'와 같을 수 있으므로 String이 적합
+    private Integer seatRow;
 
     @Column(name = "seat_column", nullable = false)
-    private String seatCol; // 열(column) 또한 숫자가 아닐 수 있음
+    private Integer seatColumn;
 
     @Column(name = "seat_number", nullable = false)
-    private String seatNumber; // 예: 'A열 5번'
+    private String seatNumber;
 
     @Builder
-    public Seat(Location location, Integer floor, String section, String seatRow, String seatCol, String seatNumber) {
+    public Seat(Location location, Integer floor, String section, Integer seatRow, Integer seatColumn, String seatNumber) {
         this.location = location;
         this.floor = floor;
         this.section = section;
         this.seatRow = seatRow;
-        this.seatCol = seatCol;
+        this.seatColumn = seatColumn;
         this.seatNumber = seatNumber;
     }
 }
