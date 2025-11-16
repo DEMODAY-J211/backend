@@ -1,14 +1,14 @@
 package com.tikitta.backend.controller;
 
 import com.tikitta.backend.dto.venue.VenueRegisterRequest;
+import com.tikitta.backend.dto.venue.VenueSeatmapRequest;
 import com.tikitta.backend.service.LocationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/manager/venue")
@@ -23,5 +23,16 @@ public class VenueManagerController {
             @RequestPart("locationPicture") MultipartFile locationPicture) {
         locationService.registerLocation(request, locationPicture);
         return ResponseEntity.ok().body("공연장 등록: success");
+    }
+
+    @PostMapping("/seatmap")
+    public ResponseEntity<?> registerSeatmap(@RequestBody VenueSeatmapRequest request) {
+        locationService.registerSeatmap(request);
+        return ResponseEntity.ok().body(Map.of(
+                "success", true,
+                "code", 200,
+                "message", "success: 저장 완료~",
+                "data", Map.of("location", request.getLocation())
+        ));
     }
 }

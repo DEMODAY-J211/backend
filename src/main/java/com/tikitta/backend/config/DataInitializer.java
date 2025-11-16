@@ -81,16 +81,16 @@ public class DataInitializer implements CommandLineRunner {
                 .location(testLocation)
                 .floor(1) // ◀◀◀ 이 값이 추가되었습니다.
                 .section("A")
-                .seatRow("1")
-                .seatCol("1")
+                .seatRow(1)
+                .seatColumn(1)
                 .seatNumber("A1")
                 .build();
         Seat seatA2 = Seat.builder()
                 .location(testLocation)
                 .floor(1) // ◀◀◀ 이 값이 추가되었습니다.
                 .section("A")
-                .seatRow("1")
-                .seatCol("2")
+                .seatRow(1)
+                .seatColumn(2)
                 .seatNumber("A2")
                 .build();
         seatRepository.saveAll(List.of(seatA1, seatA2));

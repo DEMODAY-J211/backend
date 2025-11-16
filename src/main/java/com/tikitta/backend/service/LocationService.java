@@ -1,14 +1,17 @@
 package com.tikitta.backend.service;
 
-import com.tikitta.backend.domain.DomainEnums;
-import com.tikitta.backend.domain.KakaoOauth;
-import com.tikitta.backend.domain.Location;
-import com.tikitta.backend.domain.Manager;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tikitta.backend.domain.*;
 import com.tikitta.backend.dto.LocationViewResponse;
+import com.tikitta.backend.dto.venue.SeatData;
 import com.tikitta.backend.dto.venue.VenueRegisterRequest;
+import com.tikitta.backend.dto.venue.VenueSeatmapRequest;
+import com.tikitta.backend.repository.LocationMapRepository;
 import com.tikitta.backend.repository.LocationRepository;
 import com.tikitta.backend.repository.ManagerRepository;
+import com.tikitta.backend.repository.SeatRepository;
 import com.tikitta.backend.util.AuthUtil;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +22,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -32,7 +36,10 @@ public class LocationService {
 
     private final LocationRepository locationRepository;
     private final ManagerRepository managerRepository;
+    private final SeatRepository seatRepository;
+    private final LocationMapRepository locationMapRepository;
     private final AuthUtil authUtil;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final String uploadDir = "src/main/resources/static/images/";
 
@@ -67,8 +74,42 @@ public class LocationService {
         locationRepository.save(location);
     }
 
+    @Transactional
+    public void registerSeatmap(VenueSeatmapRequest request) {
+        Location location = locationRepository.findByName(request.getLocation())
+                .orElseThrow(() -> new EntityNotFoundException("Location not found: " + request.getLocation()));
+
+        try {
+            String seatMapJson = objectMapper.writeValueAsString(request.getSeatMap());
+            LocationMap locationMap = LocationMap.builder()
+                    .location(location)
+                    .layoutWidth(request.getLayoutWidth())
+                    .layoutHeight(request.getLayoutHeight())
+                    .seatMapData(seatMapJson)
+                    .build();
+            locationMapRepository.save(locationMap);
+
+            List<Seat> seats = new ArrayList<>();
+            for (SeatData data : request.getSeatData().values()) {
+                Seat seat = Seat.builder()
+                        .location(location)
+                        .floor(data.getSeatFloor())
+                        .section(data.getSeatSection() != null ? data.getSeatSection() : "X")
+                        .seatRow(data.getSeatRow())
+                        .seatColumn(data.getSeatColumn())
+                        .seatNumber(data.getSeatTable())
+                        .build();
+                seats.add(seat);
+            }
+            seatRepository.saveAll(seats);
+
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to serialize seat map", e);
+        }
+    }
+
     private String saveFile(MultipartFile file) {
-        if (file.isEmpty()) {
+        if (file == null || file.isEmpty()) {
             return null;
         }
 
