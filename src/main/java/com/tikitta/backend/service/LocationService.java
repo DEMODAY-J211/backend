@@ -1,11 +1,13 @@
 package com.tikitta.backend.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tikitta.backend.domain.*;
 import com.tikitta.backend.dto.LocationViewResponse;
 import com.tikitta.backend.dto.venue.SeatData;
 import com.tikitta.backend.dto.venue.VenueRegisterRequest;
 import com.tikitta.backend.dto.venue.VenueSeatmapRequest;
+import com.tikitta.backend.dto.venue.VenueSeatmapResponse;
 import com.tikitta.backend.repository.LocationMapRepository;
 import com.tikitta.backend.repository.LocationRepository;
 import com.tikitta.backend.repository.ManagerRepository;
@@ -80,7 +82,6 @@ public class LocationService {
                 .orElseThrow(() -> new EntityNotFoundException("Location not found: " + request.getLocation()));
 
         try {
-            // 1. 무대(-1) 좌표 추출
             List<List<Integer>> stageCoordinates = new ArrayList<>();
             List<List<Object>> seatMapList = request.getSeatMap();
             for (int i = 0; i < seatMapList.size(); i++) {
@@ -92,21 +93,18 @@ public class LocationService {
                 }
             }
 
-            // 2. seat_map과 무대 좌표를 JSON 문자열로 변환
             String seatMapJson = objectMapper.writeValueAsString(request.getSeatMap());
             String stageCoordinatesJson = objectMapper.writeValueAsString(stageCoordinates);
 
-            // 3. LocationMap 엔티티 생성 및 저장
             LocationMap locationMap = LocationMap.builder()
                     .location(location)
                     .layoutWidth(request.getLayoutWidth())
                     .layoutHeight(request.getLayoutHeight())
                     .seatMapData(seatMapJson)
-                    .stageCoordinates(stageCoordinatesJson) // 추출한 무대 좌표 저장
+                    .stageCoordinates(stageCoordinatesJson)
                     .build();
             locationMapRepository.save(locationMap);
 
-            // 4. Seat 엔티티 생성 및 저장
             List<Seat> seats = new ArrayList<>();
             if (request.getSeatData() != null) {
                 for (SeatData data : request.getSeatData().values()) {
@@ -125,6 +123,24 @@ public class LocationService {
 
         } catch (IOException e) {
             throw new RuntimeException("Failed to serialize seat map or stage coordinates", e);
+        }
+    }
+
+    public VenueSeatmapResponse getSeatmap(Long locationId) {
+        LocationMap locationMap = locationMapRepository.findByLocationId(locationId)
+                .orElseThrow(() -> new EntityNotFoundException("Seat map not found for locationId: " + locationId));
+
+        try {
+            List<List<Object>> seatMap = objectMapper.readValue(locationMap.getSeatMapData(), new TypeReference<>() {});
+
+            return VenueSeatmapResponse.builder()
+                    .location(locationMap.getLocation().getName())
+                    .layoutWidth(locationMap.getLayoutWidth())
+                    .layoutHeight(locationMap.getLayoutHeight())
+                    .seatMap(seatMap)
+                    .build();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to deserialize seat map data", e);
         }
     }
 
