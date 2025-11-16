@@ -4,10 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tikitta.backend.domain.*;
 import com.tikitta.backend.dto.LocationViewResponse;
-import com.tikitta.backend.dto.venue.SeatData;
-import com.tikitta.backend.dto.venue.VenueRegisterRequest;
-import com.tikitta.backend.dto.venue.VenueSeatmapRequest;
-import com.tikitta.backend.dto.venue.VenueSeatmapResponse;
+import com.tikitta.backend.dto.venue.*;
 import com.tikitta.backend.repository.LocationMapRepository;
 import com.tikitta.backend.repository.LocationRepository;
 import com.tikitta.backend.repository.ManagerRepository;
@@ -24,11 +21,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,9 +36,8 @@ public class LocationService {
     private final LocationMapRepository locationMapRepository;
     private final AuthUtil authUtil;
     private final ObjectMapper objectMapper = new ObjectMapper();
-
     private final String uploadDir = "src/main/resources/static/images/";
-
+    // ... (다른 메소드들은 그대로 유지)
     @Transactional
     public void registerLocation(VenueRegisterRequest request, MultipartFile locationPicture) {
         String pictureUrl = saveFile(locationPicture);
@@ -144,6 +137,80 @@ public class LocationService {
         }
     }
 
+    @Transactional
+    public SeatDeleteResponse updateSeatmap(Long locationId, SeatDeleteRequest request) {
+        LocationMap locationMap = locationMapRepository.findByLocationId(locationId)
+                .orElseThrow(() -> new EntityNotFoundException("Seat map not found for locationId: " + locationId));
+
+        try {
+            List<List<Object>> originalSeatMap = objectMapper.readValue(locationMap.getSeatMapData(), new TypeReference<>() {});
+            List<List<Object>> newSeatMap = request.getSeatMap();
+
+            List<String> seatsToDelete = new ArrayList<>();
+            Map<String, String> seatNumberUpdates = new HashMap<>(); // Key: old seat number, Value: new seat number
+            long newTotalSeats = 0;
+
+            int rows = Math.max(originalSeatMap.size(), newSeatMap.size());
+            for (int i = 0; i < rows; i++) {
+                List<Object> originalRow = i < originalSeatMap.size() ? originalSeatMap.get(i) : Collections.emptyList();
+                List<Object> newRow = i < newSeatMap.size() ? newSeatMap.get(i) : Collections.emptyList();
+                int cols = Math.max(originalRow.size(), newRow.size());
+
+                for (int j = 0; j < cols; j++) {
+                    Object originalCell = j < originalRow.size() ? originalRow.get(j) : 0;
+                    Object newCell = j < newRow.size() ? newRow.get(j) : 0;
+
+                    String originalSeatNum = (originalCell instanceof String) ? (String) originalCell : null;
+                    String newSeatNum = (newCell instanceof String) ? (String) newCell : null;
+
+                    if (originalSeatNum != null && newSeatNum == null) { // 좌석 -> 빈 공간 (삭제)
+                        seatsToDelete.add(originalSeatNum);
+                    } else if (originalSeatNum != null && !originalSeatNum.equals(newSeatNum)) { // 좌석 -> 다른 좌석 (업데이트)
+                        seatNumberUpdates.put(originalSeatNum, newSeatNum);
+                    }
+                    
+                    if (newSeatNum != null) {
+                        newTotalSeats++;
+                    }
+                }
+            }
+
+            // DB 업데이트 수행
+            if (!seatsToDelete.isEmpty()) {
+                seatRepository.deleteByLocationIdAndSeatNumberIn(locationId, seatsToDelete);
+            }
+
+            if (!seatNumberUpdates.isEmpty()) {
+                List<Seat> seatsToUpdate = seatRepository.findByLocationIdAndSeatNumberIn(locationId, new ArrayList<>(seatNumberUpdates.keySet()));
+                Map<String, Seat> seatMapByOldNumber = seatsToUpdate.stream()
+                        .collect(Collectors.toMap(Seat::getSeatNumber, Function.identity()));
+
+                for (Map.Entry<String, String> entry : seatNumberUpdates.entrySet()) {
+                    Seat seat = seatMapByOldNumber.get(entry.getKey());
+                    if (seat != null) {
+                        seat.setSeatNumber(entry.getValue());
+                    }
+                }
+                seatRepository.saveAll(seatsToUpdate);
+            }
+
+            // LocationMap 업데이트
+            String newSeatMapJson = objectMapper.writeValueAsString(newSeatMap);
+            locationMap.setSeatMapData(newSeatMapJson);
+            locationMapRepository.save(locationMap);
+
+            long updatedCount = seatsToDelete.size() + seatNumberUpdates.size();
+
+            return SeatDeleteResponse.builder()
+                    .updatedSeatCount(updatedCount)
+                    .totalAvailableSeats(newTotalSeats)
+                    .build();
+
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to process seat map update", e);
+        }
+    }
+    
     private String saveFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             return null;

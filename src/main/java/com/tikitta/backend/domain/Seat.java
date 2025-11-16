@@ -45,4 +45,8 @@ public class Seat {
         this.seatColumn = seatColumn;
         this.seatNumber = seatNumber;
     }
+
+    public void setSeatNumber(String seatNumber) {
+        this.seatNumber = seatNumber;
+    }
 }
