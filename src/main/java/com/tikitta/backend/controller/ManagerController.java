@@ -12,6 +12,7 @@ import com.tikitta.backend.dto.ReservationStatusUpdateResponse;
 import com.tikitta.backend.repository.KakaoOauthRepository;
 import com.tikitta.backend.repository.ManagerRepository;
 import com.tikitta.backend.service.CheckInService;
+import com.tikitta.backend.service.ShowDraftService;
 import com.tikitta.backend.service.ShowService;
 import java.util.LinkedHashMap;
 
@@ -37,6 +38,7 @@ public class ManagerController {
     private final ShowService showService;
     private final CheckInService checkInService;
     private final AuthUtil authUtil; // 2. AuthUtil 주입
+    private final ShowDraftService showDraftService;
 
     @GetMapping("/main")
     @PreAuthorize("hasRole('MANAGER')")
@@ -178,5 +180,12 @@ public class ManagerController {
     ) {
         List<ReservationSeatListResponse> response = showService.getReservationSeatList(showId, showtimeId, keyword);
         return ResponseEntity.ok(response);
+    }
+
+    //---------임시저장-------------//
+    @PostMapping("/shows")
+    public ResponseEntity<ApiResponse<ShowDraftCreateResponse>> createShow(){
+        ShowDraftCreateResponse response= showDraftService.CreateShow();
+        return ResponseEntity.ok(new ApiResponse<>(200,"초안 작성 성공",response));
     }
 }
