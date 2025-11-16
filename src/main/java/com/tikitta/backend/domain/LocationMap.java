@@ -31,11 +31,16 @@ public class LocationMap {
     @Column(name = "seat_map_data", columnDefinition = "TEXT", nullable = false)
     private String seatMapData; // JSON string
 
+    @Lob
+    @Column(name = "stage_coordinates", columnDefinition = "TEXT")
+    private String stageCoordinates; // JSON string of [[row, col], [row, col]]
+
     @Builder
-    public LocationMap(Location location, Integer layoutWidth, Integer layoutHeight, String seatMapData) {
+    public LocationMap(Location location, Integer layoutWidth, Integer layoutHeight, String seatMapData, String stageCoordinates) {
         this.location = location;
         this.layoutWidth = layoutWidth;
         this.layoutHeight = layoutHeight;
         this.seatMapData = seatMapData;
+        this.stageCoordinates = stageCoordinates;
     }
 }
