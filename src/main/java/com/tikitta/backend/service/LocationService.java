@@ -80,31 +80,51 @@ public class LocationService {
                 .orElseThrow(() -> new EntityNotFoundException("Location not found: " + request.getLocation()));
 
         try {
+            // 1. 무대(-1) 좌표 추출
+            List<List<Integer>> stageCoordinates = new ArrayList<>();
+            List<List<Object>> seatMapList = request.getSeatMap();
+            for (int i = 0; i < seatMapList.size(); i++) {
+                for (int j = 0; j < seatMapList.get(i).size(); j++) {
+                    Object cell = seatMapList.get(i).get(j);
+                    if (cell instanceof Integer && (Integer) cell == -1) {
+                        stageCoordinates.add(List.of(i, j));
+                    }
+                }
+            }
+
+            // 2. seat_map과 무대 좌표를 JSON 문자열로 변환
             String seatMapJson = objectMapper.writeValueAsString(request.getSeatMap());
+            String stageCoordinatesJson = objectMapper.writeValueAsString(stageCoordinates);
+
+            // 3. LocationMap 엔티티 생성 및 저장
             LocationMap locationMap = LocationMap.builder()
                     .location(location)
                     .layoutWidth(request.getLayoutWidth())
                     .layoutHeight(request.getLayoutHeight())
                     .seatMapData(seatMapJson)
+                    .stageCoordinates(stageCoordinatesJson) // 추출한 무대 좌표 저장
                     .build();
             locationMapRepository.save(locationMap);
 
+            // 4. Seat 엔티티 생성 및 저장
             List<Seat> seats = new ArrayList<>();
-            for (SeatData data : request.getSeatData().values()) {
-                Seat seat = Seat.builder()
-                        .location(location)
-                        .floor(data.getSeatFloor())
-                        .section(data.getSeatSection() != null ? data.getSeatSection() : "X")
-                        .seatRow(data.getSeatRow())
-                        .seatColumn(data.getSeatColumn())
-                        .seatNumber(data.getSeatTable())
-                        .build();
-                seats.add(seat);
+            if (request.getSeatData() != null) {
+                for (SeatData data : request.getSeatData().values()) {
+                    Seat seat = Seat.builder()
+                            .location(location)
+                            .floor(data.getSeatFloor())
+                            .section(data.getSeatSection() != null ? data.getSeatSection() : "X")
+                            .seatRow(data.getSeatRow())
+                            .seatColumn(data.getSeatColumn())
+                            .seatNumber(data.getSeatTable())
+                            .build();
+                    seats.add(seat);
+                }
+                seatRepository.saveAll(seats);
             }
-            seatRepository.saveAll(seats);
 
         } catch (IOException e) {
-            throw new RuntimeException("Failed to serialize seat map", e);
+            throw new RuntimeException("Failed to serialize seat map or stage coordinates", e);
         }
     }
 
