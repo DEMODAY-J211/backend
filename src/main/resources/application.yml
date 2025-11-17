@@ -38,4 +38,4 @@ server:
         same-site: none
         http-only: true
         secure: true
-frontend-url: https://tikitta.duckdns.org
+frontend-url: http://localhost:5173
