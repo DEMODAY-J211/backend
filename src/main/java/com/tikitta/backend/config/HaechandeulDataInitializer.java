@@ -82,7 +82,7 @@ public class HaechandeulDataInitializer implements CommandLineRunner {
         // 좌석 5개 생성
         List<Seat> seats = new ArrayList<>();
         for (int i = 1; i <= 5; i++) {
-            seats.add(Seat.builder().location(newLocation).floor(1).section("A").seatRow("1").seatCol(String.valueOf(i)).seatNumber("A" + i).build());
+            seats.add(Seat.builder().location(newLocation).floor(1).section("A").seatRow(1).seatColumn(i).seatNumber("A-" + i).build());
         }
         seatRepository.saveAll(seats);
 

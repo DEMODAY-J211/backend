@@ -52,7 +52,7 @@ public final class DomainEnums {
      * 입금 계좌 은행
      */
     public enum Bank {
-        WOORI, NONGHYUP, KAKAO, SHINHAN, IBK, HANA // 필요에 따라 은행 추가
+        WOORI, NONGHYUP, KAKAO, SHINHAN, IBK, HANA, KB, EPOST, TOSS
     }
 
     /**
