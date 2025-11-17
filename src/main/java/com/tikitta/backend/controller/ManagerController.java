@@ -184,8 +184,20 @@ public class ManagerController {
 
     //---------임시저장-------------//
     @PostMapping("/shows")
-    public ResponseEntity<ApiResponse<ShowDraftCreateResponse>> createShow(){
-        ShowDraftCreateResponse response= showDraftService.CreateShow();
+    public ResponseEntity<ApiResponse<ShowUpdateResponse>> createShow(){
+        ShowUpdateResponse response= showDraftService.CreateShow();
         return ResponseEntity.ok(new ApiResponse<>(200,"초안 작성 성공",response));
     }
+
+    @PatchMapping("/shows/{showId}/draft")
+    public ResponseEntity<ApiResponse<ShowUpdateResponse>> updateDraft(
+        @PathVariable("showId") Long showId,
+        @RequestBody ShowUpdateRequest request){
+
+        ShowUpdateResponse response =showDraftService.updateShow(showId, request);
+
+        return ResponseEntity.ok(new ApiResponse<>(200,"임시저장 되었습니다.",response));
+
+    }
+
 }

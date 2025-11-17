@@ -7,7 +7,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 @Builder
-public class ShowDraftCreateResponse {
+public class ShowUpdateResponse {
     private Long showId;
     private String status;
 }
