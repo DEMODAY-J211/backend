@@ -210,6 +210,75 @@ public class LocationService {
             throw new RuntimeException("Failed to process seat map update", e);
         }
     }
+
+    @Transactional
+    public SeatVipResponse updateVipSeats(Long locationId, SeatVipRequest request) {
+        LocationMap locationMap = locationMapRepository.findByLocationId(locationId)
+                .orElseThrow(() -> new EntityNotFoundException("Seat map not found for locationId: " + locationId));
+
+        try {
+            List<List<Object>> originalSeatMap = objectMapper.readValue(locationMap.getSeatMapData(), new TypeReference<>() {});
+            List<List<Object>> vipMask = request.getSeatMap();
+
+            List<String> seatsToUpdateToVip = new ArrayList<>();
+            List<String> seatsToUpdateToNormal = new ArrayList<>();
+            long totalAvailableSeats = 0;
+
+            int rows = Math.min(originalSeatMap.size(), vipMask.size());
+            for (int i = 0; i < rows; i++) {
+                List<Object> originalRow = originalSeatMap.get(i);
+                List<Object> maskRow = vipMask.get(i);
+                int cols = Math.min(originalRow.size(), maskRow.size());
+
+                for (int j = 0; j < cols; j++) {
+                    Object originalCell = originalRow.get(j);
+                    Object maskCell = maskRow.get(j);
+
+                    if (originalCell instanceof String) {
+                        totalAvailableSeats++;
+                        String seatNumber = (String) originalCell;
+                        if (maskCell instanceof Integer && (Integer) maskCell == 1) {
+                            seatsToUpdateToVip.add(seatNumber);
+                        } else {
+                            seatsToUpdateToNormal.add(seatNumber);
+                        }
+                    }
+                }
+            }
+
+            // DB 업데이트
+            long updatedCount = 0;
+            if (!seatsToUpdateToVip.isEmpty()) {
+                List<Seat> seats = seatRepository.findByLocationIdAndSeatNumberIn(locationId, seatsToUpdateToVip);
+                for (Seat seat : seats) {
+                    if (!"VIP".equals(seat.getSection())) {
+                        seat.setSection("VIP");
+                        updatedCount++;
+                    }
+                }
+                seatRepository.saveAll(seats);
+            }
+
+            if (!seatsToUpdateToNormal.isEmpty()) {
+                List<Seat> seats = seatRepository.findByLocationIdAndSeatNumberIn(locationId, seatsToUpdateToNormal);
+                for (Seat seat : seats) {
+                    if (!"X".equals(seat.getSection())) {
+                        seat.setSection("X");
+                        updatedCount++;
+                    }
+                }
+                seatRepository.saveAll(seats);
+            }
+
+            return SeatVipResponse.builder()
+                    .updatedSeatCount(updatedCount)
+                    .totalAvailableSeats(totalAvailableSeats)
+                    .build();
+
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to process VIP seat update", e);
+        }
+    }
     
     private String saveFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
