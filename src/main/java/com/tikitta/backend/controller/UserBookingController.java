@@ -237,4 +237,26 @@ public class UserBookingController {
                 new ApiResponse<>("좌석 선택이 저장되었습니다. 다음 단계로 진행하세요.")
         );
     }
+
+    @PatchMapping("/{reservationId}/seats")
+    public ResponseEntity<ApiResponse<String>> changeSeats(
+            @PathVariable Long managerId,
+            @PathVariable Long reservationId,
+            @RequestBody ChangeSeatsRequest request,
+            Authentication authentication) {
+        try {
+            userBookingService.changeSeats(reservationId, request.getShowSeatIds(), authentication);
+            return ResponseEntity.ok(new ApiResponse<>("좌석 변경이 완료되었습니다."));
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode())
+                    .body(new ApiResponse<>(e.getStatusCode().value(), e.getReason()));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ApiResponse<>(HttpStatus.FORBIDDEN.value(), e.getMessage()));
+        } catch (Exception e) {
+            log.error("좌석 변경 중 오류 발생: reservationId={}", reservationId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), "좌석 변경 중 오류가 발생했습니다."));
+        }
+    }
 }

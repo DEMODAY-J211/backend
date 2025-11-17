@@ -189,6 +189,7 @@ public class UserBookingService {
                 items.add(ReservationItem.builder()
                         .reservation(reservation)
                         .showSeat(ss)
+                        .status(DomainEnums.ReservationStatus.PENDING_PAYMENT)
                         .build());
             }
 
@@ -201,6 +202,7 @@ public class UserBookingService {
                 items.add(ReservationItem.builder()
                         .reservation(reservation)
                         .entryNumber(nextEntry + i)
+                        .status(DomainEnums.ReservationStatus.PENDING_PAYMENT)
                         .build());
             }
         }
@@ -367,5 +369,93 @@ public class UserBookingService {
         // 5. 세션 DTO에 저장
         sessionDto.setSelectedShowSeatIds(showSeatIds);
         sessionDto.setSelectedSeatTables(seatTables);
+    }
+
+    @Transactional
+    public void changeSeats(Long reservationId,
+                            List<Long> newShowSeatIds,
+                            Authentication authentication) {
+
+        // 0. 예매 조회
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "존재하지 않는 예매입니다. ID: " + reservationId
+                ));
+
+        // 1. 로그인 사용자 == 예매자 확인
+        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+        Map<String, Object> kakaoAccount = (Map<String, Object>) oAuth2User.getAttributes().get("kakao_account");
+        String email = (String) kakaoAccount.get("email");
+
+        if (!reservation.getUser().getEmail().equals(email)) {
+            throw new AccessDeniedException("자신의 예매에 대해서만 좌석을 변경할 수 있습니다.");
+        }
+
+        // 2. 좌석제 공연인지 확인
+        Shows show = reservation.getShowTime().getShow();
+        if (show.getSaleMethod() != DomainEnums.SaleMethod.Select_by_User) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "좌석제 공연에서만 좌석 변경이 가능합니다.");
+        }
+
+        // 3. 수량 체크 (선택 좌석 수 == 예매 수량)
+        if (newShowSeatIds == null || newShowSeatIds.size() != reservation.getQuantity()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "선택한 좌석 수가 예매 수량과 일치하지 않습니다.");
+        }
+
+        ShowTime showTime = reservation.getShowTime();
+
+        // 4. 새 좌석 엔티티 조회
+        List<ShowSeat> newShowSeats = showSeatRepository.findAllById(newShowSeatIds);
+        if (newShowSeats.size() != newShowSeatIds.size()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "유효하지 않은 좌석이 포함되어 있습니다.");
+        }
+
+        // 5. 회차/예약가능 여부 검증
+        for (ShowSeat ss : newShowSeats) {
+
+            if (!ss.getShowTime().getId().equals(showTime.getId())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "선택한 좌석 중 이 예매의 회차와 다른 좌석이 있습니다.");
+            }
+
+            // 이미 이 예약이 점유하고 있는 좌석인지 여부
+            boolean isCurrentlyMine = reservation.getReservationItems().stream()
+                    .anyMatch(item -> item.getShowSeat() != null
+                            && item.getShowSeat().getId().equals(ss.getId()));
+
+            // 다른 사람에게 점유된 좌석은 허용 안 함
+            if (!isCurrentlyMine && !ss.isAvailable()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "이미 예약된 좌석이 포함되어 있습니다.");
+            }
+        }
+
+        // 6. 기존 좌석들 반환 (isAvailable = true)
+        for (ReservationItem item : reservation.getReservationItems()) {
+            ShowSeat oldSeat = item.getShowSeat();
+            if (oldSeat != null) {
+                oldSeat.cancel();         // isAvailable = true
+                showSeatRepository.save(oldSeat);
+            }
+        }
+
+        // 7. ReservationItem 수와 좌석 수가 맞는지 최종 확인
+        List<ReservationItem> items = reservation.getReservationItems();
+        if (items.size() != newShowSeats.size()) {
+            throw new IllegalStateException("ReservationItem 수와 예매 수량이 일치하지 않습니다.");
+        }
+
+        // 8. 새 좌석으로 매핑 & 좌석 점유
+        for (int i = 0; i < items.size(); i++) {
+            ReservationItem item = items.get(i);
+            ShowSeat newSeat = newShowSeats.get(i);
+
+            newSeat.reserve();            // isAvailable = false
+            showSeatRepository.save(newSeat);
+
+            item.setShowSeat(newSeat);    // <<< 세터 필요
+        }
+
+        log.info("좌석 변경 완료: reservationId={}, newSeatIds={}", reservationId, newShowSeatIds);
     }
 }
