@@ -18,4 +18,6 @@ public interface ShowSeatRepository extends JpaRepository<ShowSeat,Long> {
     @Modifying
     @Query("DELETE FROM ShowSeat ss WHERE ss.showTime IN (SELECT st FROM ShowTime st WHERE st.show = :show)")
     void deleteByShow(@Param("show") Shows show);
+
+    boolean existsByShowTime_Show(Shows showTimeShow);
 }

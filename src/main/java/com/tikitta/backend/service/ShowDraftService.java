@@ -8,6 +8,7 @@ import com.tikitta.backend.util.AuthUtil;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -25,6 +26,7 @@ public class ShowDraftService {
     private final ShowSeatRepository showSeatRepository;
     private final SeatRepository seatRepository;
     private final MessageRepository messageRepository;
+    private final RestClient.Builder builder;
 
     public ShowUpdateResponse CreateShow(){
         KakaoOauth user=authUtil.getCurrentUser();
@@ -65,7 +67,7 @@ public class ShowDraftService {
         }
 
         if(request.getShowTimes() != null){
-            updateShowTimes(draft,request.getShowTimes());
+            updateShowTimes(draft,request);
         }
         /* [D] 티켓 옵션 교체 */
         if (request.getTicketOptions() != null) {
@@ -136,38 +138,48 @@ public class ShowDraftService {
     }
 
     //회차 변경 시 -> 해당 회차만 좌석 복제
-    private void updateShowTimes(Shows draft, List<ShowUpdateRequest.ShowTimeInfo> items){
-        draft.getShowTimes().clear();
+    private void updateShowTimes(Shows draft, ShowUpdateRequest request) {
+
+        draft.getShowTimes().clear(); // 기존 회차/좌석은 orphanRemoval로 모두 삭제
 
         Location location = draft.getLocation();
-
-        //공연장이 지정되어 있으면 좌석 복제 준비
         List<Seat> seats = null;
         boolean isSeated = false;
 
-        if(location != null && location.getType() == DomainEnums.LocationType.SEATED){
+        if (location != null && location.getType() == DomainEnums.LocationType.SEATED) {
             seats = seatRepository.findByLocation(location);
             isSeated = (seats != null && !seats.isEmpty());
         }
 
         List<ShowSeat> newBatch = new ArrayList<>();
 
-        //회차 다시 생성
-        for (var dto: items){
+
+        List<ShowUpdateRequest.ShowTimeInfo> items = request.getShowTimes();
+
+        // 회차 다시 생성
+        for (var dto : items) {
             LocalDateTime bookingEndAt = dto.getShowStart().minusHours(1);
-            ShowTime st = ShowTime.builder()
+
+            // 1. 빌더 준비 (공통 정보)
+            ShowTime.ShowTimeBuilder builder = ShowTime.builder()
                     .show(draft)
                     .startAt(dto.getShowStart())
                     .endAt(dto.getShowEnd())
-                    .bookingEndAt(bookingEndAt)
-                    .build();
+                    .bookingEndAt(bookingEndAt);
 
+            // 2. 스탠딩(!isSeated)일 때만 총수량을 빌더에 추가
+            if (!isSeated) {
+                builder.totalStandingQuantity(request.getSeatCount());
+            }
+
+            // 3. ShowTime 객체를 먼저 *완성*시킴
+            ShowTime st = builder.build();
             draft.getShowTimes().add(st);
 
-            if(isSeated){
-                //공연장 좌석이 있으면 해당 회차 좌석 생성
-                if(seats != null){
-                    for(Seat s: seats){
+            // 4. 좌석제(isSeated)일 때, 완성된 'st'를 사용해 newBatch에 좌석 추가
+            if (isSeated) {
+                if (seats != null) {
+                    for (Seat s : seats) {
                         newBatch.add(ShowSeat.builder()
                                 .showTime(st)
                                 .seat(s)
@@ -176,10 +188,11 @@ public class ShowDraftService {
                     }
                 }
             }
+        } // <-- for 루프 종료
 
-            if (!newBatch.isEmpty()) {
-                showSeatRepository.saveAll(newBatch);
-            }
+        // 5. 루프가 다 끝난 후 모아둔 좌석을 한 번에 저장
+        if (!newBatch.isEmpty()) {
+            showSeatRepository.saveAll(newBatch);
         }
     }
 
@@ -223,5 +236,72 @@ public class ShowDraftService {
         messageRepository.save(message);
     }
 
+    public ShowUpdateResponse publishShow(Long showId){
+        KakaoOauth user=authUtil.getCurrentUser();
+        Manager manager = managerRepository.findByKakaoOauth(user)
+                .orElseThrow(()->new IllegalArgumentException("해당 사용자의 매니저 정보를 찾을 수 없습니다."));
 
+        Shows draft = showsRepository.findById(showId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 공연이 존재하지 않습니다."));
+
+        if (draft.getStatus() != DomainEnums.ShowStatus.DRAFT) {
+            throw new IllegalStateException("임시저장 상태의 공연만 최종 등록할 수 있습니다.");
+        }
+
+        vaildateShowForPublishing(draft);
+
+        draft.setStatus(DomainEnums.ShowStatus.PUBLISHED);
+        return new ShowUpdateResponse(draft.getId(), draft.getStatus().name());
+    }
+
+    private void vaildateShowForPublishing(Shows draft) {
+        if (draft.getTitle() == null || draft.getTitle().isBlank())
+            throw new IllegalStateException("공연 제목을 입력해야 합니다.");
+
+//        if (draft.getPosterUrl() == null || draft.getPosterUrl().isBlank())
+//            throw new IllegalStateException("포스터를 등록해야 합니다.");
+
+        if (draft.getBookingStartAt() == null)
+            throw new IllegalStateException("예매 시작일을 입력해야 합니다.");
+
+        if (draft.getBankName() == null || draft.getBankAccountNumber() == null)
+            throw new IllegalStateException("정산 계좌 정보를 모두 입력해야 합니다.");
+
+        if (draft.getLocation() == null)
+            throw new IllegalStateException("공연장을 선택해야 합니다.");
+
+        List<ShowTime> showTimes = draft.getShowTimes();
+        if (showTimes == null || showTimes.isEmpty())
+            throw new IllegalStateException("공연 회차를 1개 이상 등록해야 합니다.");
+
+        // 좌석 vs 스탠딩
+
+        if (draft.getLocation().getType() == DomainEnums.LocationType.SEATED) {
+            // 좌석 공연이라면 showSeat가 존재해야 한다.
+            if (!showSeatRepository.existsByShowTime_Show(draft)) {
+                throw new IllegalStateException("좌석제 공연이지만 좌석 정보가 생성되지 않았습니다.");
+            }
+        } else {
+            // 스탠딩 수량 검증
+            int standingTotal = showTimes.stream()
+                    .mapToInt(st -> st.getTotalStandingQuantity() == null ? 0 : st.getTotalStandingQuantity())
+                    .sum();
+            if (standingTotal <= 0)
+                throw new IllegalStateException("스탠딩 공연의 스탠딩 수량을 입력해야 합니다.");
+        }
+
+        // --- 티켓 옵션 ---
+        if (draft.getTicketOptions() == null || draft.getTicketOptions().isEmpty())
+            throw new IllegalStateException("티켓 옵션을 1개 이상 등록해야 합니다.");
+
+        // --- 메시지 ---
+        Message msg = messageRepository.findByShow(draft)
+                .orElseThrow(() -> new IllegalStateException("메시지 정보를 입력해야 합니다."));
+
+        if (msg.getPaymentGuide() == null || msg.getPaymentGuide().isBlank()
+                || msg.getBookingConfirmation() == null || msg.getBookingConfirmation().isBlank()
+                || msg.getShowGuide() == null || msg.getShowGuide().isBlank()) {
+            throw new IllegalStateException("입금 안내, 예매 확정, 공연 안내 메시지는 필수입니다.");
+        }
+    }
 }

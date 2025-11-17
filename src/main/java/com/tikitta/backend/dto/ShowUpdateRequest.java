@@ -25,7 +25,7 @@ public class ShowUpdateRequest {
     private Long locationId;
     private String locationName;
     private String seatType;
-    private Long seatCount;
+    private Integer seatCount;
     private ShowMessageInfo showMessage;
     private String status;
     private String reviewUrl;
