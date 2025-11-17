@@ -49,4 +49,8 @@ public class Seat {
     public void setSeatNumber(String seatNumber) {
         this.seatNumber = seatNumber;
     }
+
+    public void setSection(String section) {
+        this.section = section;
+    }
 }
