@@ -68,6 +68,8 @@ public class Shows {
     @Column(name = "show_user_link", unique = true)
     private String userLink;
 
+    private Long seatCount;
+
     @Column(name = "show_is_completed", nullable = false)
     private boolean isCompleted = false;
 
@@ -92,6 +94,7 @@ public class Shows {
         this.status = status != null ? status : DomainEnums.ShowStatus.DRAFT;
         this.reviewUrl = reviewUrl;
         this.userLink = userLink;
+        this.seatCount = seatCount;
     }
 
 }

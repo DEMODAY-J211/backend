@@ -37,9 +37,6 @@ public class Message {
     @Column(name = "message_review_request")
     private String reviewRequest;
 
-    @Column(name="review_url")
-    private String reviewUrl;
-
     @Builder
     public Message(Shows show, String paymentGuide, String bookingConfirmation, String bookingCustom, String showGuide, String qrGuide, String reviewRequest) {
         this.show = show;
@@ -49,6 +46,5 @@ public class Message {
         this.showGuide = showGuide;
         this.qrGuide = qrGuide;
         this.reviewRequest = reviewRequest;
-        this.reviewUrl = reviewUrl;
     }
 }

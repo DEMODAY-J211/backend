@@ -1,6 +1,8 @@
 package com.tikitta.backend.service;
 
 import com.tikitta.backend.domain.*;
+import com.tikitta.backend.dto.ShowDraftDeleteResponse;
+import com.tikitta.backend.dto.ShowDraftResponse;
 import com.tikitta.backend.dto.ShowUpdateResponse;
 import com.tikitta.backend.dto.ShowUpdateRequest;
 import com.tikitta.backend.repository.*;
@@ -13,6 +15,7 @@ import org.springframework.web.client.RestClient;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -99,6 +102,14 @@ public class ShowDraftService {
         if(request.getDetailText() != null) draft.setDetailText(request.getDetailText());
         if (request.getSeatType() != null)
             draft.setSaleMethod(DomainEnums.SaleMethod.valueOf(request.getSeatType()));
+        if (request.getSeatCount() != null) {
+            draft.setSeatCount(Long.valueOf(request.getSeatCount()));
+            List<ShowTime> showTimes = draft.getShowTimes();
+            for (ShowTime st : showTimes) {
+                st.setRemainSeatCount(Long.valueOf(request.getSeatCount()));
+            }
+        }
+
         if (request.getReviewUrl() != null) draft.setReviewUrl(request.getReviewUrl());
 
     }
@@ -148,7 +159,7 @@ public class ShowDraftService {
 
         if (location != null && location.getType() == DomainEnums.LocationType.SEATED) {
             seats = seatRepository.findByLocation(location);
-            isSeated = (seats != null && !seats.isEmpty());
+            isSeated = (seats != null && !seats.isEmpty() && draft.getSaleMethod() != DomainEnums.SaleMethod.STANDING);
         }
 
         List<ShowSeat> newBatch = new ArrayList<>();
@@ -229,8 +240,8 @@ public class ShowDraftService {
             message.setReviewRequest(dto.getReviewRequest());
         }
 
-        if(dto.getReviewUrl() != null){
-            message.setReviewUrl(dto.getReviewUrl());
+        if (dto.getReviewUrl() != null) {
+            draft.setReviewUrl(dto.getReviewUrl());
         }
 
         messageRepository.save(message);
@@ -303,5 +314,91 @@ public class ShowDraftService {
                 || msg.getShowGuide() == null || msg.getShowGuide().isBlank()) {
             throw new IllegalStateException("입금 안내, 예매 확정, 공연 안내 메시지는 필수입니다.");
         }
+    }
+
+    public ShowDraftResponse getShowDraft(Long showId){
+        KakaoOauth user=authUtil.getCurrentUser();
+        Manager manager=managerRepository.findByKakaoOauth(user)
+                .orElseThrow(()->new IllegalArgumentException("해당 매니저 정보를 찾을 수 없습니다."));
+
+        Shows draft = showsRepository.findById(showId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 공연이 존재하지 않습니다."));
+
+        if (draft.getStatus() != DomainEnums.ShowStatus.DRAFT) {
+            throw new IllegalStateException("임시저장 상태의 공연만 조회할 수 있습니다.");
+        }
+
+        Message message = messageRepository.findByShow(draft).orElse(null);
+
+        // 1. Location 객체 null-safe하게 가져오기
+        Location location = draft.getLocation();
+
+        // 2. 중첩 DTO: ShowTimeInfo 리스트 매핑
+        List<ShowDraftResponse.ShowTimeInfo> showTimeInfos = draft.getShowTimes().stream()
+                .map(st -> ShowDraftResponse.ShowTimeInfo.builder()
+                        .showStart(st.getStartAt())
+                        .showEnd(st.getEndAt())
+                        .build())
+                .collect(Collectors.toList());
+
+        // 3. 중첩 DTO: TicketOptionInfo 리스트 매핑
+        List<ShowDraftResponse.TicketOptionInfo> ticketOptionInfos = draft.getTicketOptions().stream()
+                .map(opt -> ShowDraftResponse.TicketOptionInfo.builder()
+                        .name(opt.getName())
+                        .description(opt.getDescription()) 
+                        .price(opt.getPrice())
+                        .build())
+                .collect(Collectors.toList());
+
+        // 4. 중첩 DTO: ShowMessageInfo 매핑
+        ShowDraftResponse.ShowMessageInfo messageInfo = null;
+        if (message != null) {
+            messageInfo = ShowDraftResponse.ShowMessageInfo.builder()
+                    .payGuide(message.getPaymentGuide())
+                    .bookConfirm(message.getBookingConfirmation())
+                    .showGuide(message.getShowGuide())
+                    .reviewRequest(message.getReviewRequest())
+                    .reviewUrl(draft.getReviewUrl()) // (엔티티의 reviewUrl을 Message DTO에 매핑)
+                    .build();
+        }
+
+        // 5. 최종 ShowDraftResponse DTO 빌드 및 반환
+        return ShowDraftResponse.builder()
+                .title(draft.getTitle())
+                .poster(draft.getPosterUrl())
+                .showTimes(showTimeInfos)
+                .bookStart(draft.getBookingStartAt())
+                .ticketOptions(ticketOptionInfos)
+                .bankMaster(draft.getBankDepositorName())
+                .bankName(draft.getBankName().name())
+                .bankAccount(draft.getBankAccountNumber())
+                .detailImages(draft.getDetailImageUrls())
+                .detailText(draft.getDetailText())
+                .locationId(location != null ? location.getId() : null)
+                .locationName(location != null ? location.getName() : null)
+                .seatType(draft.getSaleMethod() != null ? draft.getSaleMethod().name() : null)
+                .seatCount(Math.toIntExact(draft.getSeatCount()))
+                .showMessage(messageInfo)
+                .status(draft.getStatus().name())
+                .reviewUrl(draft.getReviewUrl()) // (DTO 최상위에 reviewUrl 필드가 있다고 가정)
+                .build();
+    }
+
+    public ShowDraftDeleteResponse deleteShowDraft() {
+
+        KakaoOauth user = authUtil.getCurrentUser();
+        Manager manager = managerRepository.findByKakaoOauth(user)
+                .orElseThrow(() -> new IllegalArgumentException("매니저 정보를 찾을 수 없습니다."));
+
+        Shows draft = showsRepository.findByManagerAndStatus(manager, DomainEnums.ShowStatus.DRAFT)
+                .orElseThrow(() -> new IllegalArgumentException("삭제할 임시저장 공연이 없습니다."));
+
+        // 3. 공연 삭제
+        // (Shows에 Cascade/orphanRemoval이 잘 설정되어 있다면
+        //  이 한 줄이 ShowTime, TicketOption, ShowSeat, Message 등을 연쇄적으로 삭제합니다)
+        showsRepository.delete(draft);
+
+        // 4. API 명세에 따라 { "deletedCount": 1 } 반환
+        return new ShowDraftDeleteResponse(1);
     }
 }

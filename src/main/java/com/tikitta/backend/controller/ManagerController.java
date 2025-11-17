@@ -218,4 +218,29 @@ public class ManagerController {
 
     }
 
+    @PostMapping("/shows/{showId}/publish")
+    public ResponseEntity<ApiResponse<ShowUpdateResponse>> updatePublish(
+            @PathVariable("showId") Long showId
+    ){
+        ShowUpdateResponse response = showDraftService.publishShow(showId);
+
+        return ResponseEntity.ok(new ApiResponse<>(200,"최종 등록 완료되었습니다.",response));
+    }
+
+    @GetMapping("/shows/{showId}/draft")
+    public ResponseEntity<ApiResponse<ShowDraftResponse>> getDraft(
+            @PathVariable Long showId
+    ){
+        ShowDraftResponse response =showDraftService.getShowDraft(showId);
+        return ResponseEntity.ok(new ApiResponse<>(200,"임시저장 미리보기",response));
+    }
+
+    @DeleteMapping("/shows/draft")
+    public ResponseEntity<ApiResponse<ShowDraftDeleteResponse>> deleteShowDraft() {
+
+        ShowDraftDeleteResponse response = showDraftService.deleteShowDraft();
+
+        return ResponseEntity.ok(new ApiResponse(200,"임시저장 공연이 삭제되었습니다.", response)
+        );
+    }
 }
