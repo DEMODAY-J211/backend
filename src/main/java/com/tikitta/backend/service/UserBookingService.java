@@ -118,6 +118,8 @@ public class UserBookingService {
         // 2. 예매하려는 회차 정보 조회
         ShowTime showTime = showTimeRepository.findById(sessionDto.getShowtimeId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 공연 회차입니다."));
+        TicketOption ticketOption = ticketOptionRepository.findById(sessionDto.getTicketOptionId())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 티켓 옵션입니다. ID: " + sessionDto.getTicketOptionId()));
 */
 
 
@@ -141,7 +143,12 @@ public class UserBookingService {
                     .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 공연 회차입니다."));
             log.info(">>> [createReservation] showTime id = {}", showTime.getId());
 
-            // ... 나머지 저장 로직
+            TicketOption ticketOption = ticketOptionRepository.findById(sessionDto.getTicketOptionId())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 티켓 옵션입니다. ID: " + sessionDto.getTicketOptionId()));
+            log.info(">>> [createReservation] ticketOption id = {}", ticketOption.getId());
+
+
+        // ... 나머지 저장 로직
 
         Shows show = showTime.getShow();
         String newReservationNumber = generateReservationNumber(show.getSaleMethod(), user);
@@ -149,9 +156,11 @@ public class UserBookingService {
         // 3. Reservation 엔티티 생성 및 저장
         Reservation reservation = Reservation.builder()
                 .user(user)
+                .reservationNumber(newReservationNumber)
                 .showTime(showTime)
                 .quantity(sessionDto.getQuantity())
                 .totalPrice(sessionDto.getCalculatedTotalPrice())
+                .ticketOption(ticketOption)
                 .phone(sessionDto.getUserPhone()) // ◀◀◀ phone 필드 추가
                 .refundAccountNumber(sessionDto.getRefundBank() + " " + sessionDto.getRefundAccount() + " " + sessionDto.getRefundHolder()) // 환불 정보 조합
                 .status(DomainEnums.ReservationStatus.PENDING_PAYMENT) // ◀ 입금 대기 상태
