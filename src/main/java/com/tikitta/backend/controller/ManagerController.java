@@ -200,6 +200,27 @@ public class ManagerController {
         return ResponseEntity.ok(new ApiResponse<>(locations));
     }
 
+    @GetMapping("/organizationview")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<ApiResponse<Map<String, ManagerInfoResponse>>> getMyOrganizationInfo(Authentication authentication) {
+        ManagerInfoResponse managerInfo = managerService.getMyOrganizationInfo(authentication);
+        return ResponseEntity.ok(new ApiResponse<>(Map.of("manager", managerInfo))
+        );
+    }
+
+    @PatchMapping("/organizationpatch")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<ApiResponse<Map<String, ManagerInfoResponse>>> updateMyOrganization(
+            @RequestBody ManagerUpdateRequest request,
+            Authentication authentication
+    ) {
+        ManagerInfoResponse updated = managerService.updateMyOrganizationInfo(authentication, request);
+
+        // message를 "success" 고정으로 쓰기로 했으니까 이 생성자 사용
+        return ResponseEntity.ok(
+                new ApiResponse<>(Map.of("manager", updated))
+        );
+    }
     //---------임시저장-------------//
     @PostMapping("/shows")
     public ResponseEntity<ApiResponse<ShowUpdateResponse>> createShow(){
