@@ -1,6 +1,7 @@
 package com.tikitta.backend.controller;
 
 import com.tikitta.backend.domain.*;
+import com.tikitta.backend.dto.userbooking.*;
 import com.tikitta.backend.repository.*;
 import com.tikitta.backend.service.UserBookingService;
 import lombok.RequiredArgsConstructor;
@@ -47,7 +48,8 @@ public class UserBookingController {
             HttpSession session) {
 
         // 1. 총 가격 계산
-        int totalPrice = userBookingService.calculateTotalPrice(requestDto.getTicketOptionId(), requestDto.getQuantity());
+        int totalPrice = userBookingService.calculateTotalPrice(
+                requestDto.getTicketOptionId(), requestDto.getQuantity());
 
         // 2. 세션에 저장할 DTO 생성
         BookingDto.SessionInfo sessionDto = new BookingDto.SessionInfo(
@@ -55,7 +57,8 @@ public class UserBookingController {
                 requestDto.getTicketOptionId(),
                 requestDto.getQuantity(),
                 totalPrice,
-                null, null, null, null // 페이지 3 정보는 아직 null
+                null, null, null, null,   // 페이지 3 정보
+                null, null                // ✅ 좌석 정보 (처음엔 null)
         );
 
         // 3. 세션에 "currentBooking" 이름으로 저장
@@ -178,6 +181,82 @@ public class UserBookingController {
             log.error("예매 취소 중 오류 발생: Reservation ID {}", reservationId, e); // 로깅 추가 권장
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), "예매 취소 중 오류가 발생했습니다."));
+        }
+    }
+
+    @GetMapping("/{showtimeId}/seats")
+    public ResponseEntity<ApiResponse<ShowSeatsResponse>> getAvailableSeats(
+            @PathVariable Long managerId,
+            @PathVariable Long showtimeId) {
+
+        ShowSeatsResponse data = userBookingService.getShowSeats(showtimeId);
+
+        return ResponseEntity.ok(new ApiResponse<>(data));
+    }
+
+    @PostMapping("/{showtimeId}/seats/select")
+    public ResponseEntity<ApiResponse<String>> selectSeats(
+            @PathVariable Long managerId,
+            @PathVariable Long showtimeId,
+            @RequestBody BookingDto.SelectSeatsRequest requestDto,
+            HttpSession session) {
+
+        // 1. 세션에서 예매 진행 정보 가져오기
+        BookingDto.SessionInfo sessionDto =
+                (BookingDto.SessionInfo) session.getAttribute("currentBooking");
+
+        if (sessionDto == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse<>(400, "예매 정보가 없습니다. 처음부터 다시 시도해주세요."));
+        }
+
+        // 2. 수량 체크 (선택한 좌석 수 == 예매 수량)
+        if (requestDto.getShowSeatIds() == null ||
+                requestDto.getShowSeatIds().size() != sessionDto.getQuantity()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse<>(400, "선택한 좌석 수가 예매 수량과 일치하지 않습니다."));
+        }
+
+        try {
+            // 3. Service로 위임해서 좌석 유효성 검증 + seatTable 리스트 생성
+            userBookingService.saveSelectedSeats(
+                    showtimeId,
+                    sessionDto,
+                    requestDto.getShowSeatIds()
+            );
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode())
+                    .body(new ApiResponse<>(e.getStatusCode().value(), e.getReason()));
+        }
+
+        // 4. 세션 업데이트
+        session.setAttribute("currentBooking", sessionDto);
+
+        // 5. 성공 응답
+        return ResponseEntity.ok(
+                new ApiResponse<>("좌석 선택이 저장되었습니다. 다음 단계로 진행하세요.")
+        );
+    }
+
+    @PatchMapping("/{reservationId}/seats")
+    public ResponseEntity<ApiResponse<String>> changeSeats(
+            @PathVariable Long managerId,
+            @PathVariable Long reservationId,
+            @RequestBody ChangeSeatsRequest request,
+            Authentication authentication) {
+        try {
+            userBookingService.changeSeats(reservationId, request.getShowSeatIds(), authentication);
+            return ResponseEntity.ok(new ApiResponse<>("좌석 변경이 완료되었습니다."));
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode())
+                    .body(new ApiResponse<>(e.getStatusCode().value(), e.getReason()));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ApiResponse<>(HttpStatus.FORBIDDEN.value(), e.getMessage()));
+        } catch (Exception e) {
+            log.error("좌석 변경 중 오류 발생: reservationId={}", reservationId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), "좌석 변경 중 오류가 발생했습니다."));
         }
     }
 }
