@@ -1,4 +1,4 @@
-package com.tikitta.backend.dto;
+package com.tikitta.backend.dto.userbooking;
 
 import com.tikitta.backend.domain.DomainEnums;
 import com.tikitta.backend.domain.Shows;
@@ -50,8 +50,17 @@ public class BookingDto {
         private String refundAccount;
         private String refundHolder;
 
-        // 좌석제용 (지금은 null)
-        // private List<Long> selectedShowSeatIds;
+        // 선택한 ShowSeat ID 목록
+        private java.util.List<Long> selectedShowSeatIds;
+        // 선택한 좌석의 seatTable 문자열 (예: "A3-7")
+        private java.util.List<String> selectedSeatTables;
+    }
+
+    // --- 좌석 선택 요청 DTO (새로 추가) ---
+    @Getter
+    @NoArgsConstructor
+    public static class SelectSeatsRequest {
+        private java.util.List<Long> showSeatIds; // 프론트에서 보내줄 선택 좌석 ID 목록
     }
 
     /**
@@ -79,7 +88,7 @@ public class BookingDto {
         private String ticketOptionName;
         private Integer quantity;
         private Integer totalPrice;
-        // private List<String> selectedSeats; // 좌석제용
+        private java.util.List<String> selectedSeats; // seatTable 리스트
 
         // --- 페이지 4 정보 ---
         private String userName;
@@ -97,6 +106,11 @@ public class BookingDto {
             this.managerBankName = show.getBankName();
             this.managerAccountNumber = show.getBankAccountNumber();
             this.managerDepositorName = show.getBankDepositorName();
+
+            // ⬇ 좌석제일 때만 선택한 좌석 seatTable 목록 셋팅
+            if (show.getSaleMethod() == DomainEnums.SaleMethod.Select_by_User) {
+                this.selectedSeats = sessionDto.getSelectedSeatTables();
+            }
         }
     }
 }

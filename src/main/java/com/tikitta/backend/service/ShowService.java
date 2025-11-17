@@ -2,21 +2,18 @@ package com.tikitta.backend.service;
 
 import com.tikitta.backend.domain.*;
 import com.tikitta.backend.dto.*;
+import com.tikitta.backend.dto.ReservationDetailDto;
 import com.tikitta.backend.repository.*;
 import java.util.ArrayList;
 import java.util.List;
 import com.tikitta.backend.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils; // StringUtils import
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.UUID;
 import java.util.stream.Collectors;
