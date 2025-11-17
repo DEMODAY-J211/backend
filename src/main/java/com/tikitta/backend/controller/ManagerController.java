@@ -200,6 +200,14 @@ public class ManagerController {
         return ResponseEntity.ok(new ApiResponse<>(locations));
     }
 
+    @GetMapping("shows/{showId}/edit")
+    public ResponseEntity<ApiResponse<ShowDraftResponse>> getShow(
+            @PathVariable Long showId
+    ){
+        ShowDraftResponse response =showService.getShow(showId);
+        return ResponseEntity.ok(new ApiResponse<>(200,"임시저장 미리보기",response));
+    }
+
     //---------임시저장-------------//
     @PostMapping("/shows")
     public ResponseEntity<ApiResponse<ShowUpdateResponse>> createShow(){
