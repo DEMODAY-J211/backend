@@ -1,16 +1,15 @@
 package com.tikitta.backend.domain;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "shows") // 'show'는 SQL 예약어일 수 있으므로 'shows'로 변경
 public class Shows {
@@ -94,4 +93,5 @@ public class Shows {
         this.reviewUrl = reviewUrl;
         this.userLink = userLink;
     }
+
 }

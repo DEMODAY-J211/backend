@@ -12,6 +12,7 @@ import com.tikitta.backend.dto.ReservationStatusUpdateResponse;
 import com.tikitta.backend.repository.KakaoOauthRepository;
 import com.tikitta.backend.repository.ManagerRepository;
 import com.tikitta.backend.service.CheckInService;
+import com.tikitta.backend.service.ShowDraftService;
 import com.tikitta.backend.service.LocationService;
 import com.tikitta.backend.service.ManagerService;
 import com.tikitta.backend.service.ShowService;
@@ -41,6 +42,7 @@ public class ManagerController {
     private final AuthUtil authUtil; // 2. AuthUtil 주입
     private final ManagerService managerService;
     private final LocationService locationService;
+    private final ShowDraftService showDraftService;
 
     @GetMapping("/main")
     @PreAuthorize("hasRole('MANAGER')")
@@ -197,4 +199,23 @@ public class ManagerController {
         List<LocationViewResponse> locations = locationService.getAllLocations();
         return ResponseEntity.ok(new ApiResponse<>(locations));
     }
+
+    //---------임시저장-------------//
+    @PostMapping("/shows")
+    public ResponseEntity<ApiResponse<ShowUpdateResponse>> createShow(){
+        ShowUpdateResponse response= showDraftService.CreateShow();
+        return ResponseEntity.ok(new ApiResponse<>(200,"초안 작성 성공",response));
+    }
+
+    @PatchMapping("/shows/{showId}/draft")
+    public ResponseEntity<ApiResponse<ShowUpdateResponse>> updateDraft(
+        @PathVariable("showId") Long showId,
+        @RequestBody ShowUpdateRequest request){
+
+        ShowUpdateResponse response =showDraftService.updateShow(showId, request);
+
+        return ResponseEntity.ok(new ApiResponse<>(200,"임시저장 되었습니다.",response));
+
+    }
+
 }

@@ -1,13 +1,11 @@
 package com.tikitta.backend.domain;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "message")
 public class Message {
@@ -39,6 +37,9 @@ public class Message {
     @Column(name = "message_review_request")
     private String reviewRequest;
 
+    @Column(name="review_url")
+    private String reviewUrl;
+
     @Builder
     public Message(Shows show, String paymentGuide, String bookingConfirmation, String bookingCustom, String showGuide, String qrGuide, String reviewRequest) {
         this.show = show;
@@ -48,5 +49,6 @@ public class Message {
         this.showGuide = showGuide;
         this.qrGuide = qrGuide;
         this.reviewRequest = reviewRequest;
+        this.reviewUrl = reviewUrl;
     }
 }
