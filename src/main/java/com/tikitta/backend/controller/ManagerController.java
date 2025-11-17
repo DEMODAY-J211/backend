@@ -197,4 +197,12 @@ public class ManagerController {
         List<LocationViewResponse> locations = locationService.getAllLocations();
         return ResponseEntity.ok(new ApiResponse<>(locations));
     }
+
+    @GetMapping("/organizationview")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<ApiResponse<Map<String, ManagerInfoResponse>>> getMyOrganizationInfo(Authentication authentication) {
+        ManagerInfoResponse managerInfo = managerService.getMyOrganizationInfo(authentication);
+        return ResponseEntity.ok(new ApiResponse<>(Map.of("manager", managerInfo))
+        );
+    }
 }
