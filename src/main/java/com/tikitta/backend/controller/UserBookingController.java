@@ -144,6 +144,7 @@ public class UserBookingController {
         return ResponseEntity.ok(new ApiResponse<>(reservationId));
     }
 
+    /*예매 상세 페이지*/
     @GetMapping("/{reservationId}")
     public ResponseEntity<ApiResponse<ReservationDetailResponse>> getReservationDetail(
             @PathVariable Long reservationId,

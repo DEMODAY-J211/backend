@@ -107,6 +107,7 @@ public class UserBookingService {
     @Transactional
     public Reservation createReservation(BookingDto.SessionInfo sessionDto,
                                          Authentication authentication) {
+        /*
         // 1. 로그인된 사용자 정보 조회
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
         Map<String, Object> kakaoAccount = (Map<String, Object>) oAuth2User.getAttributes().get("kakao_account");
@@ -117,8 +118,32 @@ public class UserBookingService {
         // 2. 예매하려는 회차 정보 조회
         ShowTime showTime = showTimeRepository.findById(sessionDto.getShowtimeId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 공연 회차입니다."));
-        Shows show = showTime.getShow();
+*/
 
+
+            log.info(">>> [createReservation] sessionDto = {}", sessionDto);
+            log.info(">>> [createReservation] authentication = {}", authentication);
+
+            OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+            log.info(">>> [createReservation] oAuth2User attrs = {}", oAuth2User.getAttributes());
+
+            Map<String, Object> kakaoAccount = (Map<String, Object>) oAuth2User.getAttributes().get("kakao_account");
+            log.info(">>> [createReservation] kakaoAccount = {}", kakaoAccount);
+
+            String email = (String) kakaoAccount.get("email");
+            log.info(">>> [createReservation] email = {}", email);
+
+            KakaoOauth user = kakaoOauthRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("로그인된 사용자 정보를 찾을 수 없습니다."));
+            log.info(">>> [createReservation] kakao user id = {}", user.getId());
+
+            ShowTime showTime = showTimeRepository.findById(sessionDto.getShowtimeId())
+                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 공연 회차입니다."));
+            log.info(">>> [createReservation] showTime id = {}", showTime.getId());
+
+            // ... 나머지 저장 로직
+
+        Shows show = showTime.getShow();
         String newReservationNumber = generateReservationNumber(show.getSaleMethod(), user);
 
         // 3. Reservation 엔티티 생성 및 저장
@@ -217,6 +242,7 @@ public class UserBookingService {
         // 3. DTO로 변환하여 반환
         return new ReservationDetailResponse(reservation);
     }
+
     @Transactional // 쓰기 작업이므로 readOnly=false
     public void cancelReservation(Long reservationId, Authentication authentication) {
 
