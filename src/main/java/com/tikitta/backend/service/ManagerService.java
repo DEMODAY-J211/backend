@@ -4,6 +4,7 @@ import com.tikitta.backend.domain.KakaoOauth;
 import com.tikitta.backend.domain.Manager;
 import com.tikitta.backend.dto.LocationLikeResponse;
 import com.tikitta.backend.dto.ManagerInfoResponse;
+import com.tikitta.backend.dto.ManagerUpdateRequest;
 import com.tikitta.backend.repository.ManagerRepository;
 import com.tikitta.backend.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,45 @@ public class ManagerService {
 
         Manager manager = managerRepository.findByKakaoOauth(oauth)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "매니저 정보가 존재하지 않습니다."));
+
+        return new ManagerInfoResponse(
+                manager.getPictureUrl(),
+                manager.getName(),
+                manager.getIntroduction(),
+                manager.getDescription(),
+                manager.getUrls()
+        );
+    }
+
+    public ManagerInfoResponse updateMyOrganizationInfo(Authentication authentication,
+                                                        ManagerUpdateRequest request) {
+
+        KakaoOauth oauth = (KakaoOauth) authentication.getPrincipal();
+
+        Manager manager = managerRepository.findByKakaoOauth(oauth)
+                .orElseThrow(() ->
+                        new ResponseStatusException(HttpStatus.NOT_FOUND, "매니저 정보가 존재하지 않습니다.")
+                );
+
+        // PATCH: null이 아닌 필드만 업데이트
+        if (request.getManagerPicture() != null) {
+            manager.setPictureUrl(request.getManagerPicture());
+        }
+        if (request.getManagerName() != null) {
+            manager.setName(request.getManagerName());
+        }
+        if (request.getManagerIntro() != null) {
+            manager.setIntroduction(request.getManagerIntro());
+        }
+        if (request.getManagerText() != null) {
+            manager.setDescription(request.getManagerText());
+        }
+        if (request.getManagerUrl() != null) {
+            manager.getUrls().clear();
+            manager.getUrls().addAll(request.getManagerUrl());
+        }
+
+        managerRepository.save(manager);
 
         return new ManagerInfoResponse(
                 manager.getPictureUrl(),
