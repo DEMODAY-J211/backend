@@ -148,12 +148,13 @@ public class UserBookingService {
 
 
         Shows show = showTime.getShow();
-        DomainEnums.SaleMethod saleMethod = show.getSaleMethod();
+        String newReservationNumber = generateReservationNumber(show.getSaleMethod(), user);
+
 
         // --- Reservation 저장 ---
         Reservation reservation = Reservation.builder()
                 .user(user)
-                .reservationNumber(generateReservationNumber(saleMethod, user))
+                .reservationNumber(newReservationNumber)
                 .showTime(showTime)
                 .quantity(sessionDto.getQuantity())
                 .totalPrice(sessionDto.getCalculatedTotalPrice())
@@ -170,6 +171,7 @@ public class UserBookingService {
 
         List<ReservationItem> items = new ArrayList<>();
 
+        DomainEnums.SaleMethod saleMethod = show.getSaleMethod();
         if (saleMethod == DomainEnums.SaleMethod.Select_by_User) {
             // ========== 좌석제 ==========
             List<Long> showSeatIds = sessionDto.getSelectedShowSeatIds();
