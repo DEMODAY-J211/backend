@@ -9,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.util.Map;
@@ -25,61 +26,49 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
                                         HttpServletResponse response,
                                         Authentication authentication) throws IOException {
 
-        // 1. Service가 반환한 '커스텀' OAuth2User 객체 가져오기
-        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-        Map<String, Object> attributes = oAuth2User.getAttributes();
+        HttpSession session = request.getSession(false);
+        String targetUrl = getTargetUrlFromSession(session);
 
-        // 2. Service가 넣어준 속성 꺼내기 (안전하게)
-        Object isSignupObj = attributes.get("isSignup");
-        boolean isSignup = (isSignupObj instanceof Boolean) ? (Boolean) isSignupObj : false;
+        if (targetUrl == null) {
+            // 세션에 저장된 리다이렉트 URI가 없으면 기존 로직 수행
+            OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+            Map<String, Object> attributes = oAuth2User.getAttributes();
 
-        Object roleObj = attributes.get("userRole");
-        String role = (roleObj instanceof String) ? (String) roleObj : "USER"; // 기본값 USER
+            boolean isSignup = (boolean) attributes.getOrDefault("isSignup", false);
+            String role = (String) attributes.getOrDefault("userRole", "USER");
 
-        String redirectUrl;
-
-        // 1. [회원가입 플로우]
-        if (isSignup) {
-            redirectUrl = frontendBaseUrl + "/landing";
-        } else {
-            if ("MANAGER".equalsIgnoreCase(role)) {
-                redirectUrl = frontendBaseUrl + "/homemanager?login=success";
+            if (isSignup) {
+                targetUrl = frontendBaseUrl + "/landing";
             } else {
-                String relativePath = getDefaultUserRedirectUrl(request.getSession(false));
-                redirectUrl = frontendBaseUrl + "/homeuser?login=success";
+                if ("MANAGER".equalsIgnoreCase(role)) {
+                    targetUrl = frontendBaseUrl + "/homemanager";
+                } else {
+                    // 이 부분은 기존 로직을 유지하거나, 더 단순한 기본 URL로 변경할 수 있습니다.
+                    // 예를 들어, managerId 관련 로직이 복잡하다면 그냥 /homeuser로 통일할 수도 있습니다.
+                    targetUrl = frontendBaseUrl + "/homeuser";
+                }
             }
         }
 
-        HttpSession session = request.getSession(false);
+        // 사용한 세션 속성 정리
         if (session != null) {
+            session.removeAttribute(RedirectUriSaveFilter.SAVED_REDIRECT_URI_ATTRIBUTE);
             session.removeAttribute("selectedRole");
             session.removeAttribute("LAST_VISITED_MANAGER_ID");
         }
 
         clearAuthenticationAttributes(request);
-        getRedirectStrategy().sendRedirect(request, response, redirectUrl);
+        getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }
 
-
-    /**
-     * USER의 리다이렉트 URL을 결정하는 헬퍼 메소드
-     */
-    private String getDefaultUserRedirectUrl(HttpSession session) {
-        String managerId = null;
-        if (session != null) {
-            // ManagerIdSaveFilter가 저장한 세션 값 확인
-            Object managerIdObj = session.getAttribute("LAST_VISITED_MANAGER_ID");
-            if (managerIdObj instanceof String) {
-                managerId = (String) managerIdObj;
-            }
+    private String getTargetUrlFromSession(HttpSession session) {
+        if (session == null) {
+            return null;
         }
-
-        if (managerId != null) {
-            // 저장된 managerId가 있으면 해당 main으로
-            return "/user/" + managerId + "/main";
-        } else {
-            // (예외 상황) 저장된 managerId가 없으면 테스트용 1번으로
-            return "/homeuser"; // (또는 "/" 루트 페이지)
+        String redirectUri = (String) session.getAttribute(RedirectUriSaveFilter.SAVED_REDIRECT_URI_ATTRIBUTE);
+        if (redirectUri != null && !redirectUri.isEmpty()) {
+            return redirectUri;
         }
+        return null;
     }
 }
