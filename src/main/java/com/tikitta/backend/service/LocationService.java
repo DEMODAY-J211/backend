@@ -67,6 +67,13 @@ public class LocationService {
                 .build();
 
         locationRepository.save(location);
+
+        KakaoOauth currentUser = authUtil.getCurrentUser();
+        Manager manager = managerRepository.findByKakaoOauth(currentUser)
+            .orElseThrow(() -> new RuntimeException("매니저 정보를 찾을 수 없습니다."));
+        
+        manager.getLikedLocations().add(location);
+        managerRepository.save(manager);
     }
 
     @Transactional

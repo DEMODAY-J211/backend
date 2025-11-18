@@ -239,4 +239,10 @@ public class ManagerController {
 
     }
 
+    @GetMapping("/venue/like")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<ApiResponse<LocationLikeResponse>> likeVenue(@RequestParam("id") Long locationId) {
+        LocationLikeResponse response = managerService.likeVenue(locationId);
+        return ResponseEntity.ok(new ApiResponse<>(200, "success-좋아요~", response));
+    }
 }
