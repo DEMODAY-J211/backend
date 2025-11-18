@@ -43,10 +43,10 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
             redirectUrl = frontendBaseUrl + "/landing";
         } else {
             if ("MANAGER".equalsIgnoreCase(role)) {
-                redirectUrl = frontendBaseUrl + "/homemanager";
+                redirectUrl = frontendBaseUrl + "/homemanager?login=success";
             } else {
                 String relativePath = getDefaultUserRedirectUrl(request.getSession(false));
-                redirectUrl = frontendBaseUrl + "/homeuser";
+                redirectUrl = frontendBaseUrl + "/homeuser?login=success";
             }
         }
 
