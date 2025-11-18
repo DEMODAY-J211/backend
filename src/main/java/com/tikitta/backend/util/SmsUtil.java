@@ -42,12 +42,13 @@ public class SmsUtil {
      * @throws IOException API 호출 실패 시
      */
     public Map<String, String> sendSms(String phoneNumber, String message) throws IOException {
-        // 1. 토큰이 없거나 만료되었으면 새로 발급
-        if (accessToken == null || LocalDateTime.now().isAfter(tokenExpiryTime)) {
+        // 1. 토큰이 없거나, 만료 시간이 없거나, 만료되었으면 새로 발급
+        if (accessToken == null || tokenExpiryTime == null || LocalDateTime.now().isAfter(tokenExpiryTime)) {
             refreshAccessToken();
         }
 
-        // 2. SMS 발송 API 호출
+        // 2. SMS 발송 API 호출 (원래 방식으로 복원)
+        // base64encode(SMS_ID:ACCESS_TOKEN)
         String authValue = Base64.getEncoder().encodeToString((smsId + ":" + accessToken).getBytes(StandardCharsets.UTF_8));
 
         RequestBody requestBody = new MultipartBody.Builder()
@@ -74,10 +75,11 @@ public class SmsUtil {
     }
 
     /**
-     * Gabia API Access Token을 발급/갱신하는 메소드
+     * Gabia API Access Token을 발급/갱신하는 메소드 (원래 방식으로 복원)
      * @throws IOException API 호출 실패 시
      */
     private void refreshAccessToken() throws IOException {
+        // base64encode(SMS_ID:API_KEY)
         String authValue = Base64.getEncoder().encodeToString((smsId + ":" + apiKey).getBytes(StandardCharsets.UTF_8));
 
         RequestBody requestBody = new MultipartBody.Builder()
@@ -101,11 +103,15 @@ public class SmsUtil {
 
             if (result.containsKey("access_token")) {
                 this.accessToken = result.get("access_token");
-                // 토큰 만료 시간을 현재 시간 + (만료 시간 - 60초)로 설정 (안전 마진)
-                long expiresIn = Long.parseLong(result.getOrDefault("expires_in", "3600"));
+                long expiresIn = 3600L; // 기본값 3600초
+                try {
+                    expiresIn = Long.parseLong(result.get("expires_in"));
+                } catch (Exception e) {
+                    System.err.println("Warning: 'expires_in' 파싱 실패. 기본값 3600초를 사용합니다.");
+                }
                 this.tokenExpiryTime = LocalDateTime.now().plusSeconds(expiresIn - 60);
             } else {
-                throw new IOException("Gabia 인증 토큰 파싱 실패: 'access_token'이 없습니다.");
+                throw new IOException("Gabia 인증 토큰 파싱 실패: 'access_token'이 없습니다. 응답: " + responseBody);
             }
         }
     }
