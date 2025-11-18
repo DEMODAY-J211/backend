@@ -44,5 +44,5 @@ frontend-url: https://localhost:5173
 gabia:
   sms:
     id: "haechandeul"
-    api-key: "YOUR_API_KEY" # 여기에 실제 API Key를 입력하세요.
+    api-key: ${GABIA_API_KEY} # 환경 변수에서 API 키를 읽어옵니다.
     callback: "01030762799" # 여기에 실제 발신번호를 입력하세요.

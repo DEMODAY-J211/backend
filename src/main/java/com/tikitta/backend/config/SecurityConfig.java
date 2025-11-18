@@ -35,7 +35,8 @@ public class SecurityConfig {
                                 "/user/*/main",
                                 "/user/*/detail/**",
                                 "/user/*/organization",
-                                "/auth/**" // /auth/kakao/dev-login 등 포함
+                                "/auth/**", // /auth/kakao/dev-login 등 포함
+                                "/api/test/**" // 테스트용 API 경로 추가
                         ).permitAll()
                         .requestMatchers("/manager/**").hasRole("MANAGER")
                         .requestMatchers("/user/*/myshow", "/user/*/booking/**", "/user/*/ticket/**").hasRole("USER")
