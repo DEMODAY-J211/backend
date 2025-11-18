@@ -16,6 +16,7 @@ public class MyReservationItemDto {
     private Integer reservationQuantity;
     private String reservationNumber;
     private String showPosterPicture;
+    private String reservationStatus;
 
 
     public MyReservationItemDto(Reservation reservation) {
@@ -27,5 +28,7 @@ public class MyReservationItemDto {
         this.reservationQuantity = reservation.getQuantity();
         this.reservationNumber = reservation.getReservationNumber();
         this.showPosterPicture = reservation.getShowTime().getShow().getPosterUrl();
+        this.reservationStatus = reservation.getStatus().name();
+
     }
 }
