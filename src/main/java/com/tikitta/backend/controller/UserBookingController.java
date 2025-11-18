@@ -186,7 +186,6 @@ public class UserBookingController {
 
     @GetMapping("/{showtimeId}/seats")
     public ResponseEntity<ApiResponse<ShowSeatsResponse>> getAvailableSeats(
-            @PathVariable Long managerId,
             @PathVariable Long showtimeId) {
 
         ShowSeatsResponse data = userBookingService.getShowSeats(showtimeId);
@@ -196,7 +195,6 @@ public class UserBookingController {
 
     @PostMapping("/{showtimeId}/seats/select")
     public ResponseEntity<ApiResponse<String>> selectSeats(
-            @PathVariable Long managerId,
             @PathVariable Long showtimeId,
             @RequestBody BookingDto.SelectSeatsRequest requestDto,
             HttpSession session) {
@@ -240,7 +238,6 @@ public class UserBookingController {
 
     @PatchMapping("/{reservationId}/seats")
     public ResponseEntity<ApiResponse<String>> changeSeats(
-            @PathVariable Long managerId,
             @PathVariable Long reservationId,
             @RequestBody ChangeSeatsRequest request,
             Authentication authentication) {
