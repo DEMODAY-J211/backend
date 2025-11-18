@@ -19,7 +19,7 @@ public class VenueManagerController {
 
     @PostMapping("/register")
     public ResponseEntity<?> registerVenue(
-            @RequestPart("request") VenueRegisterRequest request,
+            @RequestPart("venueRegisterRequest") VenueRegisterRequest request,
             @RequestPart("locationPicture") MultipartFile locationPicture) {
         locationService.registerLocation(request, locationPicture);
         return ResponseEntity.ok().body("공연장 등록: success");
