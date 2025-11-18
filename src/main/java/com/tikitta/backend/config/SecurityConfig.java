@@ -32,6 +32,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
+                                "/", // 루트 경로 허용
                                 "/user/*/main",
                                 "/user/*/detail/**",
                                 "/user/*/organization",
