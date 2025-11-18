@@ -19,7 +19,7 @@ public class SeatResponseDto {
     private Integer seatRow;
     private Integer seatColumn;
 
-    private String seatTable;  // "A3-7" 형태의 표기 (편의용)
+    private String seatTable;
 
     private Boolean isAvailable;
 }
