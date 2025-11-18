@@ -38,7 +38,7 @@ server:
         same-site: none
         http-only: true
         secure: true
-frontend-url: http://localhost:5173
+frontend-url: https://localhost:5173
 
 # Gabia SMS API Settings
 gabia:
