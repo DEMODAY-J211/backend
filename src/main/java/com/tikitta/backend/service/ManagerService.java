@@ -1,12 +1,15 @@
 package com.tikitta.backend.service;
 
 import com.tikitta.backend.domain.KakaoOauth;
+import com.tikitta.backend.domain.Location;
 import com.tikitta.backend.domain.Manager;
 import com.tikitta.backend.dto.LocationLikeResponse;
 import com.tikitta.backend.dto.ManagerInfoResponse;
 import com.tikitta.backend.dto.ManagerUpdateRequest;
+import com.tikitta.backend.repository.LocationRepository;
 import com.tikitta.backend.repository.ManagerRepository;
 import com.tikitta.backend.util.AuthUtil;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -23,6 +26,7 @@ import java.util.stream.Collectors;
 public class ManagerService {
 
     private final ManagerRepository managerRepository;
+    private final LocationRepository locationRepository;
     private final AuthUtil authUtil;
 
     public List<LocationLikeResponse> getLikedLocations() {
@@ -34,6 +38,24 @@ public class ManagerService {
                 .map(location -> new LocationLikeResponse(location.getId(), location.getName(), location.getType()))
                 .collect(Collectors.toList());
     }
+
+    @Transactional
+    public LocationLikeResponse likeVenue(Long locationId) {
+        KakaoOauth currentUser = authUtil.getCurrentUser();
+        Manager manager = managerRepository.findByKakaoOauth(currentUser)
+                .orElseThrow(() -> new RuntimeException("매니저 정보를 찾을 수 없습니다."));
+
+        Location location = locationRepository.findById(locationId)
+                .orElseThrow(() -> new EntityNotFoundException("해당 공연장을 찾을 수 없습니다: " + locationId));
+
+        if (!manager.getLikedLocations().contains(location)) {
+            manager.getLikedLocations().add(location);
+            managerRepository.save(manager);
+        }
+
+        return new LocationLikeResponse(location.getId(), location.getName(), location.getType());
+    }
+
 
     public ManagerInfoResponse getMyOrganizationInfo(Authentication authentication) {
         KakaoOauth oauth = (KakaoOauth) authentication.getPrincipal();
@@ -50,6 +72,7 @@ public class ManagerService {
         );
     }
 
+    @Transactional
     public ManagerInfoResponse updateMyOrganizationInfo(Authentication authentication,
                                                         ManagerUpdateRequest request) {
 
