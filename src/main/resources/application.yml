@@ -36,6 +36,13 @@ server:
     session:
       cookie:
         same-site: none
-        http-only: true
+        http-only: false
         secure: true
 frontend-url: http://localhost:5173
+
+# Gabia SMS API Settings
+gabia:
+  sms:
+    id: "YOUR_SMS_ID" # 여기에 실제 SMS ID를 입력하세요.
+    api-key: "YOUR_API_KEY" # 여기에 실제 API Key를 입력하세요.
+    callback: "YOUR_CALLBACK_NUMBER" # 여기에 실제 발신번호를 입력하세요.
