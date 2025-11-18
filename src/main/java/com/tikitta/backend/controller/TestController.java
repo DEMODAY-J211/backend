@@ -20,9 +20,6 @@ public class TestController {
 
     /**
      * SMS 발송 기능을 테스트하기 위한 임시 API
-     * @param phone 수신할 휴대폰 번호
-     * @param message 보낼 메시지 내용
-     * @return Gabia API로부터 받은 응답 결과
      */
     @GetMapping("/sms")
     public ResponseEntity<?> sendTestSms(
@@ -33,7 +30,23 @@ public class TestController {
             Map<String, String> result = smsUtil.sendSms(phone, message);
             return ResponseEntity.ok(result);
         } catch (IOException e) {
-            // 에러 발생 시, 에러 메시지를 응답으로 보냅니다.
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * LMS 발송 기능을 테스트하기 위한 임시 API
+     */
+    @GetMapping("/lms")
+    public ResponseEntity<?> sendTestLms(
+            @RequestParam("phone") String phone,
+            @RequestParam("subject") String subject,
+            @RequestParam("message") String message
+    ) {
+        try {
+            Map<String, String> result = smsUtil.sendLms(phone, subject, message);
+            return ResponseEntity.ok(result);
+        } catch (IOException e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
     }

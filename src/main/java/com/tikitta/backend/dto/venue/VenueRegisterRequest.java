@@ -10,6 +10,6 @@ public class VenueRegisterRequest {
     private String locationAddress;
     private String locationAddressDetail;
     private Integer locationStandingCount;
-    private Integer locationSeatFloor;
+    private Integer locationSeatfloor;
     private Integer locationSeatCount;
 }

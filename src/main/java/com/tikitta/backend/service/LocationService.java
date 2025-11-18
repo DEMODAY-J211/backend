@@ -53,7 +53,7 @@ public class LocationService {
         } else {
             type = DomainEnums.LocationType.SEATED;
             totalSeats = request.getLocationSeatCount();
-            floor = request.getLocationSeatFloor() != null ? request.getLocationSeatFloor() : 1;
+            floor = request.getLocationSeatfloor() != null ? request.getLocationSeatfloor() : 1;
         }
 
         Location location = Location.builder()
