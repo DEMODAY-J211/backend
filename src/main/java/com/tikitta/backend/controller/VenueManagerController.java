@@ -1,5 +1,7 @@
 package com.tikitta.backend.controller;
 
+import com.tikitta.backend.domain.Location;
+import com.tikitta.backend.dto.ApiResponse;
 import com.tikitta.backend.dto.venue.VenueRegisterRequest;
 import com.tikitta.backend.dto.venue.VenueSeatmapRequest;
 import com.tikitta.backend.service.LocationService;
@@ -18,21 +20,16 @@ public class VenueManagerController {
     private final LocationService locationService;
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerVenue(
+    public ResponseEntity<ApiResponse<Map<String, Long>>> registerVenue(
             @RequestPart("venueRegisterRequest") VenueRegisterRequest request,
             @RequestPart("locationPicture") MultipartFile locationPicture) {
-        locationService.registerLocation(request, locationPicture);
-        return ResponseEntity.ok().body("공연장 등록: success");
+        Location location = locationService.registerLocation(request, locationPicture);
+        return ResponseEntity.ok(new ApiResponse<>(200, "공연장 등록: success", Map.of("location_id", location.getId())));
     }
 
     @PostMapping("/seatmap")
-    public ResponseEntity<?> registerSeatmap(@RequestBody VenueSeatmapRequest request) {
+    public ResponseEntity<ApiResponse<Map<String, Long>>> registerSeatmap(@RequestBody VenueSeatmapRequest request) {
         locationService.registerSeatmap(request);
-        return ResponseEntity.ok().body(Map.of(
-                "success", true,
-                "code", 200,
-                "message", "success: 저장 완료~",
-                "data", Map.of("location", request.getLocation())
-        ));
+        return ResponseEntity.ok(new ApiResponse<>(200, "success: 저장 완료~", Map.of("location_id", request.getLocationId())));
     }
 }

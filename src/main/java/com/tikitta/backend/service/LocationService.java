@@ -39,7 +39,7 @@ public class LocationService {
     private final String uploadDir = "src/main/resources/static/images/";
     // ... (다른 메소드들은 그대로 유지)
     @Transactional
-    public void registerLocation(VenueRegisterRequest request, MultipartFile locationPicture) {
+    public Location registerLocation(VenueRegisterRequest request, MultipartFile locationPicture) {
         String pictureUrl = saveFile(locationPicture);
 
         DomainEnums.LocationType type;
@@ -74,12 +74,13 @@ public class LocationService {
         
         manager.getLikedLocations().add(location);
         managerRepository.save(manager);
+        return location;
     }
 
     @Transactional
     public void registerSeatmap(VenueSeatmapRequest request) {
-        Location location = locationRepository.findByName(request.getLocation())
-                .orElseThrow(() -> new EntityNotFoundException("Location not found: " + request.getLocation()));
+        Location location = locationRepository.findById(request.getLocationId())
+                .orElseThrow(() -> new EntityNotFoundException("Location not found: " + request.getLocationId()));
 
         try {
             List<List<Integer>> stageCoordinates = new ArrayList<>();

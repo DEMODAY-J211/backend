@@ -10,11 +10,12 @@ import java.util.Map;
 @Getter
 @Setter
 public class VenueSeatmapRequest {
-    private String location;
+    @JsonProperty("location_id")
+    private Long locationId;
     @JsonProperty("layout_width")
-    private Integer layoutWidth;
+    private int layoutWidth;
     @JsonProperty("layout_height")
-    private Integer layoutHeight;
+    private int layoutHeight;
     @JsonProperty("seat_map")
     private List<List<Object>> seatMap;
     @JsonProperty("seat_data")
