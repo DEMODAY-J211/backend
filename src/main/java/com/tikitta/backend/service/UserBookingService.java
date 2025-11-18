@@ -175,7 +175,14 @@ public class UserBookingService {
         if (saleMethod == DomainEnums.SaleMethod.Select_by_User) {
             // ========== 좌석제 ==========
             List<Long> showSeatIds = sessionDto.getSelectedShowSeatIds();
+            if (showSeatIds == null || showSeatIds.isEmpty()) {
+                throw new IllegalStateException("좌석제 공연에서는 좌석 선택 후 예매를 진행해야 합니다.");
+            }
+
             List<ShowSeat> showSeats = showSeatRepository.findAllById(showSeatIds);
+            if (showSeats.size() != showSeatIds.size()) {
+                throw new IllegalStateException("일부 좌석 정보를 찾을 수 없습니다.");
+            }
 
             for (ShowSeat ss : showSeats) {
                 if (!ss.getShowTime().getId().equals(showTime.getId())) {
