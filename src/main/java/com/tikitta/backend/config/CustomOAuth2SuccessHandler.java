@@ -51,9 +51,9 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
                 targetUrl = frontendBaseUrl + "/landing";
             } else {
                 if ("MANAGER".equalsIgnoreCase(role)) {
-                    targetUrl = frontendBaseUrl + "/homemanager";
+                    targetUrl = frontendBaseUrl + "/homemanager"+"?login=success";
                 } else {
-                    targetUrl = frontendBaseUrl + "/homeuser";
+                    targetUrl = frontendBaseUrl + "/homeuser" + "?login=success";
                 }
             }
         }
@@ -77,7 +77,7 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
         }
         String redirectUri = (String) session.getAttribute(RedirectUriSaveFilter.SAVED_REDIRECT_URI_ATTRIBUTE);
         if (redirectUri != null && !redirectUri.isEmpty()) {
-            return redirectUri;
+            return redirectUri+"?login=success";
         }
         return null;
     }
