@@ -65,6 +65,6 @@ jobs:
 
             echo "== 6. 새 JAR 파일 실행 (Start-up) =="
             # nohup으로 백그라운드에서 실행하고, 로그를 app.log에 기록
-            nohup java -jar build/libs/${JAR_NAME} > app.log 2>&1 &
+            nohup java -Dgabia.sms.api-key='${{ secrets.GABIA_API_KEY }}' -jar build/libs/${JAR_NAME} > app.log 2>&1 &
             
             echo "Deployment finished successfully. New process started."
