@@ -27,7 +27,12 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
                                         Authentication authentication) throws IOException {
 
         HttpSession session = request.getSession(false);
-        String targetUrl = getTargetUrlFromSession(session);
+
+        // 세션에서 redirect_uri 값을 가져와 콘솔에 출력 (디버깅용)
+        String sessionRedirectUri = getTargetUrlFromSession(session);
+        System.out.println("### [Login Success] 세션에 저장된 Redirect URI: " + sessionRedirectUri + " ###");
+
+        String targetUrl = sessionRedirectUri;
 
         if (targetUrl == null) {
             // 세션에 저장된 리다이렉트 URI가 없으면 기존 로직 수행
@@ -43,8 +48,6 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
                 if ("MANAGER".equalsIgnoreCase(role)) {
                     targetUrl = frontendBaseUrl + "/homemanager";
                 } else {
-                    // 이 부분은 기존 로직을 유지하거나, 더 단순한 기본 URL로 변경할 수 있습니다.
-                    // 예를 들어, managerId 관련 로직이 복잡하다면 그냥 /homeuser로 통일할 수도 있습니다.
                     targetUrl = frontendBaseUrl + "/homeuser";
                 }
             }
