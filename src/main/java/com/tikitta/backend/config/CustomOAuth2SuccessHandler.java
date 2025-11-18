@@ -27,14 +27,19 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
                                         Authentication authentication) throws IOException {
 
         HttpSession session = request.getSession(false);
+        String savedRedirectUri = getTargetUrlFromSession(session);
+        System.out.println("### [Login Success] 세션에 저장된 Redirect URI: " + savedRedirectUri + " ###");
 
-        // 세션에서 redirect_uri 값을 가져와 콘솔에 출력 (디버깅용)
-        String sessionRedirectUri = getTargetUrlFromSession(session);
-        System.out.println("### [Login Success] 세션에 저장된 Redirect URI: " + sessionRedirectUri + " ###");
+        String targetUrl;
 
-        String targetUrl = sessionRedirectUri;
-
-        if (targetUrl == null) {
+        if (savedRedirectUri != null) {
+            // 저장된 URI가 상대 경로이면, frontendBaseUrl을 붙여서 완전한 URL로 만듦
+            if (savedRedirectUri.startsWith("/")) {
+                targetUrl = frontendBaseUrl + savedRedirectUri;
+            } else {
+                targetUrl = savedRedirectUri;
+            }
+        } else {
             // 세션에 저장된 리다이렉트 URI가 없으면 기존 로직 수행
             OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
             Map<String, Object> attributes = oAuth2User.getAttributes();
@@ -52,6 +57,8 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
                 }
             }
         }
+
+        System.out.println("### 최종 Redirect 될 URL: " + targetUrl + " ###");
 
         // 사용한 세션 속성 정리
         if (session != null) {
