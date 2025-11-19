@@ -59,9 +59,9 @@ public final class DomainEnums {
      * 예매 상태 (주문 단위)
      */
     public enum ReservationStatus {
-        PENDING_PAYMENT,    // 입금 대기
-        CONFIRMED,          // 입금 확인
-        CANCEL_REQUESTED,   // 환불(취소) 요청
-        CANCELED            // 환불(취소) 완료
+        PENDING_PAYMENT,    // 입금대기
+        CONFIRMED,          // 입금확정
+        CANCEL_REQUESTED,   // 환불대기
+        CANCELED            // 취소완료
     }
 }

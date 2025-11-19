@@ -181,11 +181,11 @@ public class ShowService {
 
     private DomainEnums.ReservationStatus convertStatus(String status) {
         switch (status) {
-            case "입금확인":
+            case "입금확정":
                 return DomainEnums.ReservationStatus.CONFIRMED;
             case "환불대기":
                 return DomainEnums.ReservationStatus.CANCEL_REQUESTED;
-            case "환불완료":
+            case "취소완료":
                 return DomainEnums.ReservationStatus.CANCELED;
             default:
                 throw new IllegalArgumentException("Invalid status: " + status);
@@ -197,11 +197,11 @@ public class ShowService {
             case PENDING_PAYMENT:
                 return "입금대기";
             case CONFIRMED:
-                return "입금확인";
+                return "입금확정";
             case CANCEL_REQUESTED:
                 return "환불대기";
             case CANCELED:
-                return "환불완료";
+                return "취소완료";
             default:
                 return status.name();
         }
