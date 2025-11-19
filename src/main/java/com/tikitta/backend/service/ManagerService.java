@@ -48,10 +48,12 @@ public class ManagerService {
         Location location = locationRepository.findById(locationId)
                 .orElseThrow(() -> new EntityNotFoundException("해당 공연장을 찾을 수 없습니다: " + locationId));
 
-        if (!manager.getLikedLocations().contains(location)) {
+        if (manager.getLikedLocations().contains(location)) {
+            manager.getLikedLocations().remove(location);
+        } else {
             manager.getLikedLocations().add(location);
-            managerRepository.save(manager);
         }
+        managerRepository.save(manager);
 
         return new LocationLikeResponse(location.getId(), location.getName(), location.getType());
     }
