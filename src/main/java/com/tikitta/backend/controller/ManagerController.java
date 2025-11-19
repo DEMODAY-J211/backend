@@ -259,12 +259,6 @@ public class ManagerController {
 
     }
 
-    @GetMapping("/venue/like")
-    @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<ApiResponse<LocationLikeResponse>> likeVenue(@RequestParam("id") Long locationId) {
-        LocationLikeResponse response = managerService.likeVenue(locationId);
-        return ResponseEntity.ok(new ApiResponse<>(200, "success-좋아요~", response));
-    }
     @PostMapping("/shows/{showId}/publish")
     public ResponseEntity<ApiResponse<ShowUpdateResponse>> updatePublish(
             @PathVariable("showId") Long showId
@@ -289,6 +283,13 @@ public class ManagerController {
 
         return ResponseEntity.ok(new ApiResponse(200,"임시저장 공연이 삭제되었습니다.", response)
         );
+    }
+
+    @GetMapping("/venue/like")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<ApiResponse<LocationLikeResponse>> likeVenue(@RequestParam("id") Long locationId) {
+        LocationLikeResponse response = managerService.likeVenue(locationId);
+        return ResponseEntity.ok(new ApiResponse<>(200, "success-좋아요~", response));
     }
 
 
