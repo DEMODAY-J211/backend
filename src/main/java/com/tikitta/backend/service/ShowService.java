@@ -31,6 +31,7 @@ public class ShowService {
     private final ReservationItemRepository reservationItemRepository;
     private final ShowTimeRepository showTimeRepository;
     private final ShowSeatRepository showSeatRepository;
+    private final MessageRepository messageRepository;
 
     // ... (기존 getMyShows, getReservationList 메소드)
     public MyShowListResponseDto getMyShows() {
@@ -412,6 +413,100 @@ public class ShowService {
         // 6. 반환
         return responseList;
     }
+
+    public ShowDraftResponse getPublishShow(Long showId){
+        KakaoOauth user=authUtil.getCurrentUser();
+        Manager manager=managerRepository.findByKakaoOauth(user)
+                .orElseThrow(()->new IllegalArgumentException("해당 매니저 정보를 찾을 수 없습니다."));
+
+        Shows draft = showsRepository.findById(showId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 공연이 존재하지 않습니다."));
+
+        if (draft.getStatus() != DomainEnums.ShowStatus.PUBLISHED) {
+            throw new IllegalStateException("최종 상태의 공연만 조회할 수 있습니다.");
+        }
+
+        Message message = messageRepository.findByShow(draft).orElse(null);
+
+        // 1. Location 객체 null-safe하게 가져오기
+        Location location = draft.getLocation();
+
+        // 2. 중첩 DTO: ShowTimeInfo 리스트 매핑
+        List<ShowDraftResponse.ShowTimeInfo> showTimeInfos = draft.getShowTimes().stream()
+                .map(st -> ShowDraftResponse.ShowTimeInfo.builder()
+                        .showStart(st.getStartAt())
+                        .showEnd(st.getEndAt())
+                        .build())
+                .collect(Collectors.toList());
+
+        // 3. 중첩 DTO: TicketOptionInfo 리스트 매핑
+        List<ShowDraftResponse.TicketOptionInfo> ticketOptionInfos = draft.getTicketOptions().stream()
+                .map(opt -> ShowDraftResponse.TicketOptionInfo.builder()
+                        .name(opt.getName())
+                        .description(opt.getDescription())
+                        .price(opt.getPrice())
+                        .build())
+                .collect(Collectors.toList());
+
+        // 4. 중첩 DTO: ShowMessageInfo 매핑
+        ShowDraftResponse.ShowMessageInfo messageInfo = null;
+        if (message != null) {
+            messageInfo = ShowDraftResponse.ShowMessageInfo.builder()
+                    .payGuide(message.getPaymentGuide())
+                    .bookConfirm(message.getBookingConfirmation())
+                    .showGuide(message.getShowGuide())
+                    .reviewRequest(message.getReviewRequest())
+                    .reviewUrl(draft.getReviewUrl()) // (엔티티의 reviewUrl을 Message DTO에 매핑)
+                    .build();
+        }
+
+        // 5. 최종 ShowDraftResponse DTO 빌드 및 반환
+        return ShowDraftResponse.builder()
+                .title(draft.getTitle())
+                .poster(draft.getPosterUrl())
+                .showTimes(showTimeInfos)
+                .bookStart(draft.getBookingStartAt())
+                .ticketOptions(ticketOptionInfos)
+                .bankMaster(draft.getBankDepositorName())
+                .bankName(draft.getBankName().name())
+                .bankAccount(draft.getBankAccountNumber())
+                .detailImages(draft.getDetailImageUrls())
+                .detailText(draft.getDetailText())
+                .locationId(location.getId())
+                .locationName(location.getName())
+                .seatType(draft.getSaleMethod().name())
+                .seatCount(Math.toIntExact(draft.getSeatCount()))
+                .showMessage(messageInfo)
+                .status(draft.getStatus().name())
+                .reviewUrl(draft.getReviewUrl()) // (DTO 최상위에 reviewUrl 필드가 있다고 가정)
+                .build();
+    }
+
+    public ShowUpdateResponse updatePublishedShow(Long showId, ShowPublishUpdateRequest request){
+
+        KakaoOauth user=authUtil.getCurrentUser();
+        Manager manager= managerRepository.findByKakaoOauth(user)
+                .orElseThrow(()->new IllegalArgumentException("해당 매니저의 정보를 찾을 수 없습니다."));
+
+        Shows show = showsRepository.findById(showId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 공연 ID입니다: " + showId));
+
+        if (show.getStatus() != DomainEnums.ShowStatus.PUBLISHED) {
+            throw new IllegalStateException("PUBLISHED 상태의 공연만 수정할 수 있습니다.");
+        }
+
+        if (request.getDetailImages() != null) {
+            show.getDetailImageUrls().clear();
+            show.getDetailImageUrls().addAll(request.getDetailImages());
+        }
+
+        if (request.getDetailText() != null) {
+            show.setDetailText(request.getDetailText());
+        }
+
+        return new ShowUpdateResponse(show.getId(), show.getStatus().name());
+    }
+
 
 
 }

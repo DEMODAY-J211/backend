@@ -1,6 +1,5 @@
 package com.tikitta.backend.dto;
 
-import com.tikitta.backend.domain.DomainEnums;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -11,7 +10,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ShowUpdateRequest {
+public class ShowDraftResponse {
     private String title;
     private String poster;
     private List<ShowTimeInfo> showTimes;
@@ -25,12 +24,14 @@ public class ShowUpdateRequest {
     private Long locationId;
     private String locationName;
     private String seatType;
-    private Long seatCount;
+    private Integer seatCount;
     private ShowMessageInfo showMessage;
     private String status;
     private String reviewUrl;
 
     @Getter
+    @Builder
+    @AllArgsConstructor
     @NoArgsConstructor
     public static class ShowTimeInfo{
         private LocalDateTime showStart;
@@ -38,6 +39,8 @@ public class ShowUpdateRequest {
     }
 
     @Getter
+    @Builder
+    @AllArgsConstructor
     @NoArgsConstructor
     public static class TicketOptionInfo{
         private String name;
@@ -47,6 +50,8 @@ public class ShowUpdateRequest {
     }
 
     @Getter
+    @Builder
+    @AllArgsConstructor
     @NoArgsConstructor
     public static class ShowMessageInfo{
         private String payGuide;
@@ -55,5 +60,4 @@ public class ShowUpdateRequest {
         private String reviewRequest;
         private String reviewUrl;
     }
-
 }

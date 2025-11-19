@@ -221,6 +221,26 @@ public class ManagerController {
                 new ApiResponse<>(Map.of("manager", updated))
         );
     }
+//------등록된 공연 수정------//
+
+    @GetMapping("shows/{showId}/edit")
+    public ResponseEntity<ApiResponse<ShowDraftResponse>> getShow(
+            @PathVariable Long showId
+    ){
+        ShowDraftResponse response =showService.getPublishShow(showId);
+        return ResponseEntity.ok(new ApiResponse<>(200,"등록된 공연 조회 성공",response));
+    }
+
+
+    @PatchMapping("/shows/{showId}/edit")
+    public ResponseEntity<ApiResponse<ShowUpdateResponse>> updatePublishedShow(
+            @PathVariable Long showId,
+            @RequestBody ShowPublishUpdateRequest request
+    ) {
+        ShowUpdateResponse response = showService.updatePublishedShow(showId, request);
+        return ResponseEntity.ok(new ApiResponse<>(200,"예매중인 공연 수정 완료",response));
+    }
+
     //---------임시저장-------------//
     @PostMapping("/shows")
     public ResponseEntity<ApiResponse<ShowUpdateResponse>> createShow(){
@@ -239,10 +259,38 @@ public class ManagerController {
 
     }
 
+    @PostMapping("/shows/{showId}/publish")
+    public ResponseEntity<ApiResponse<ShowUpdateResponse>> updatePublish(
+            @PathVariable("showId") Long showId
+    ){
+        ShowUpdateResponse response = showDraftService.publishShow(showId);
+
+        return ResponseEntity.ok(new ApiResponse<>(200,"최종 등록 완료되었습니다.",response));
+    }
+
+    @GetMapping("/shows/{showId}/draft")
+    public ResponseEntity<ApiResponse<ShowDraftResponse>> getDraft(
+            @PathVariable Long showId
+    ){
+        ShowDraftResponse response =showDraftService.getShowDraft(showId);
+        return ResponseEntity.ok(new ApiResponse<>(200,"임시저장 미리보기",response));
+    }
+
+    @DeleteMapping("/shows/draft")
+    public ResponseEntity<ApiResponse<ShowDraftDeleteResponse>> deleteShowDraft() {
+
+        ShowDraftDeleteResponse response = showDraftService.deleteShowDraft();
+
+        return ResponseEntity.ok(new ApiResponse(200,"임시저장 공연이 삭제되었습니다.", response)
+        );
+    }
+
     @GetMapping("/venue/like")
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<LocationLikeResponse>> likeVenue(@RequestParam("id") Long locationId) {
         LocationLikeResponse response = managerService.likeVenue(locationId);
         return ResponseEntity.ok(new ApiResponse<>(200, "success-좋아요~", response));
     }
+
+
 }

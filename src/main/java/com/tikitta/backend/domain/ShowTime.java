@@ -31,7 +31,7 @@ public class ShowTime {
     private LocalDateTime bookingEndAt;
 
     @Column(name = "show_time_standing_quantity")
-    private Integer totalStandingQuantity;
+    private Long totalStandingQuantity;
 
     @Column(name = "showtime_user_count", nullable = false)
     private Long userCount;
@@ -40,7 +40,7 @@ public class ShowTime {
     private Long remainSeatCount;
 
     @Builder
-    public ShowTime(Shows show, LocalDateTime startAt, LocalDateTime endAt, LocalDateTime bookingEndAt,  Integer totalStandingQuantity, Long userCount, Long remainSeatCount) {
+    public ShowTime(Shows show, LocalDateTime startAt, LocalDateTime endAt, LocalDateTime bookingEndAt,  Long totalStandingQuantity, Long userCount, Long remainSeatCount) {
         this.show = show;
         this.startAt = startAt;
         this.endAt = endAt;
