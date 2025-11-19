@@ -26,9 +26,9 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
                                         HttpServletResponse response,
                                         Authentication authentication) throws IOException {
 
-        String frontendBaseUrl = determineFrontendBaseUrl(request);
-
         HttpSession session = request.getSession(false);
+        String frontendBaseUrl = determineFrontendBaseUrl(request, session);
+
         String savedRedirectUri = getTargetUrlFromSession(session);
         System.out.println("### [Login Success] 세션에 저장된 Redirect URI: " + savedRedirectUri + " ###");
 
@@ -62,6 +62,7 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
 
         if (session != null) {
             session.removeAttribute(RedirectUriSaveFilter.SAVED_REDIRECT_URI_ATTRIBUTE);
+            session.removeAttribute(OriginSaveFilter.SAVED_ORIGIN_ATTRIBUTE); // 사용한 Origin 정보도 세션에서 제거
             session.removeAttribute("selectedRole");
             session.removeAttribute("LAST_VISITED_MANAGER_ID");
         }
@@ -81,20 +82,22 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
         return null;
     }
 
-    private String determineFrontendBaseUrl(HttpServletRequest request) {
-        CorsConfiguration corsConfiguration = corsConfigurationSource.getCorsConfiguration(request);
-        List<String> allowedOrigins = corsConfiguration.getAllowedOrigins();
-
-        String origin = request.getHeader("Origin");
-
-        if (origin != null && allowedOrigins != null && allowedOrigins.contains(origin)) {
-            System.out.println("### [Origin Check] 요청 Origin: " + origin + " -> 허용됨 ###");
-            return origin;
+    private String determineFrontendBaseUrl(HttpServletRequest request, HttpSession session) {
+        // 1. 세션에 저장된 Origin이 있는지 먼저 확인
+        if (session != null) {
+            String savedOrigin = (String) session.getAttribute(OriginSaveFilter.SAVED_ORIGIN_ATTRIBUTE);
+            if (savedOrigin != null && !savedOrigin.isEmpty()) {
+                System.out.println("### [Origin Check] 세션에 저장된 Origin 사용: " + savedOrigin + " ###");
+                return savedOrigin;
+            }
         }
 
-        // 허용된 Origin이 아니거나 Origin 헤더가 없는 경우, 목록의 첫 번째 값을 기본값으로 사용
+        // 2. 세션에 없다면 (예: 직접 /login/oauth2/code/kakao로 접근), 기존의 폴백 로직 사용
+        CorsConfiguration corsConfiguration = corsConfigurationSource.getCorsConfiguration(request);
+        List<String> allowedOrigins = corsConfiguration.getAllowedOrigins();
         String defaultOrigin = (allowedOrigins != null && !allowedOrigins.isEmpty()) ? allowedOrigins.get(0) : "/";
-        System.out.println("### [Origin Check] 요청 Origin: " + (origin != null ? origin : "null") + " -> 허용되지 않음. 기본 URL 사용: " + defaultOrigin + " ###");
+
+        System.out.println("### [Origin Check] 세션에 Origin 없음. 기본 URL 사용: " + defaultOrigin + " ###");
         return defaultOrigin;
     }
 }

@@ -20,14 +20,16 @@ public class SecurityConfig {
     private final OAuth2UserCustomService oAuth2UserCustomService;
     private final CustomOAuth2SuccessHandler customOAuth2SuccessHandler;
     private final RedirectUriSaveFilter redirectUriSaveFilter;
-    private final CorsConfigurationSource corsConfigurationSource; // 주입 받도록 변경
+    private final OriginSaveFilter originSaveFilter; // 새로 추가
+    private final CorsConfigurationSource corsConfigurationSource;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .addFilterBefore(new ManagerIdSaveFilter(), SecurityContextPersistenceFilter.class)
                 .addFilterBefore(redirectUriSaveFilter, OAuth2AuthorizationRequestRedirectFilter.class)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource)) // 주입받은 빈 사용
+                .addFilterAfter(originSaveFilter, RedirectUriSaveFilter.class) // RedirectUriSaveFilter 다음에 실행되도록 추가
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
