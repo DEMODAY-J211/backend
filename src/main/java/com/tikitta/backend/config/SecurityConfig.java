@@ -10,11 +10,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
-import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
@@ -23,15 +19,15 @@ public class SecurityConfig {
 
     private final OAuth2UserCustomService oAuth2UserCustomService;
     private final CustomOAuth2SuccessHandler customOAuth2SuccessHandler;
-    private final RedirectUriSaveFilter redirectUriSaveFilter; // 새로 추가
+    private final RedirectUriSaveFilter redirectUriSaveFilter;
+    private final CorsConfigurationSource corsConfigurationSource; // 주입 받도록 변경
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .addFilterBefore(new ManagerIdSaveFilter(), SecurityContextPersistenceFilter.class)
-                // OAuth2 로그인 프로세스 시작 전에 redirect_uri를 저장하는 필터 추가
                 .addFilterBefore(redirectUriSaveFilter, OAuth2AuthorizationRequestRedirectFilter.class)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource)) // 주입받은 빈 사용
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
@@ -54,26 +50,5 @@ public class SecurityConfig {
                 );
 
         return http.build();
-    }
-
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:3000",
-                "http://localhost:8081",
-                "http://localhost:5173",
-                "https://localhost:5173",
-                "https://back-tikitta.duckdns.org",
-                "https://tikitta-q2ntmdwpe-hyunneees-projects.vercel.app",
-                "https://tikitta.vercel.app/"
-        ));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
     }
 }
