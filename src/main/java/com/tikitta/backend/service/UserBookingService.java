@@ -69,15 +69,15 @@ public class UserBookingService {
 
         // 2. 그 외 (스탠딩, 스케줄링, 주최자선택) 공연일 경우 (수량 계산)
         else {
-            Integer totalQuantity = showTime.getTotalStandingQuantity();
+            Long totalQuantity = showTime.getTotalStandingQuantity();
             if (totalQuantity == null || totalQuantity <= 0) {
                 return 0;
             }
             List<Reservation> reservations = reservationRepository.findByShowTimeAndStatusIn(showTime, activeStatuses);
-            int bookedQuantity = reservations.stream()
+            Long bookedQuantity = (long) reservations.stream()
                     .mapToInt(Reservation::getQuantity)
                     .sum();
-            return Math.max(0, totalQuantity - bookedQuantity); // 음수 방지
+            return Math.toIntExact(Math.max(0L, totalQuantity - bookedQuantity)); // 음수 방지
         }
 
     }
