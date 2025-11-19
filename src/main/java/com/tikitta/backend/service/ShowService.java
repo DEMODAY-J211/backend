@@ -387,7 +387,7 @@ public class ShowService {
         return responseList;
     }
 
-    public ShowDraftResponse getShow(Long showId){
+    public ShowDraftResponse getPublishShow(Long showId){
         KakaoOauth user=authUtil.getCurrentUser();
         Manager manager=managerRepository.findByKakaoOauth(user)
                 .orElseThrow(()->new IllegalArgumentException("해당 매니저 정보를 찾을 수 없습니다."));
@@ -454,6 +454,32 @@ public class ShowService {
                 .reviewUrl(draft.getReviewUrl()) // (DTO 최상위에 reviewUrl 필드가 있다고 가정)
                 .build();
     }
+
+    public ShowUpdateResponse updatePublishedShow(Long showId, ShowPublishUpdateRequest request){
+
+        KakaoOauth user=authUtil.getCurrentUser();
+        Manager manager= managerRepository.findByKakaoOauth(user)
+                .orElseThrow(()->new IllegalArgumentException("해당 매니저의 정보를 찾을 수 없습니다."));
+
+        Shows show = showsRepository.findById(showId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 공연 ID입니다: " + showId));
+
+        if (show.getStatus() != DomainEnums.ShowStatus.PUBLISHED) {
+            throw new IllegalStateException("PUBLISHED 상태의 공연만 수정할 수 있습니다.");
+        }
+
+        if (request.getDetailImages() != null) {
+            show.getDetailImageUrls().clear();
+            show.getDetailImageUrls().addAll(request.getDetailImages());
+        }
+
+        if (request.getDetailText() != null) {
+            show.setDetailText(request.getDetailText());
+        }
+
+        return new ShowUpdateResponse(show.getId(), show.getStatus().name());
+    }
+
 
 
 }

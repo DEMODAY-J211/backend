@@ -25,7 +25,7 @@ public class ShowUpdateRequest {
     private Long locationId;
     private String locationName;
     private String seatType;
-    private Integer seatCount;
+    private Long seatCount;
     private ShowMessageInfo showMessage;
     private String status;
     private String reviewUrl;
@@ -41,7 +41,7 @@ public class ShowUpdateRequest {
     @NoArgsConstructor
     public static class TicketOptionInfo{
         private String name;
-        private String decription;
+        private String description;
         private Long amount;
         private Integer price;
     }

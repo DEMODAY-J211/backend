@@ -200,12 +200,24 @@ public class ManagerController {
         return ResponseEntity.ok(new ApiResponse<>(locations));
     }
 
+//------등록된 공연 수정------//
+
     @GetMapping("shows/{showId}/edit")
     public ResponseEntity<ApiResponse<ShowDraftResponse>> getShow(
             @PathVariable Long showId
     ){
-        ShowDraftResponse response =showService.getShow(showId);
-        return ResponseEntity.ok(new ApiResponse<>(200,"임시저장 미리보기",response));
+        ShowDraftResponse response =showService.getPublishShow(showId);
+        return ResponseEntity.ok(new ApiResponse<>(200,"등록된 공연 조회 성공",response));
+    }
+
+
+    @PatchMapping("/shows/{showId}/edit")
+    public ResponseEntity<ApiResponse<ShowUpdateResponse>> updatePublishedShow(
+            @PathVariable Long showId,
+            @RequestBody ShowPublishUpdateRequest request
+    ) {
+        ShowUpdateResponse response = showService.updatePublishedShow(showId, request);
+        return ResponseEntity.ok(new ApiResponse<>(200,"예매중인 공연 수정 완료",response));
     }
 
     //---------임시저장-------------//
@@ -251,4 +263,6 @@ public class ManagerController {
         return ResponseEntity.ok(new ApiResponse(200,"임시저장 공연이 삭제되었습니다.", response)
         );
     }
+
+
 }
