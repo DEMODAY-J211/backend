@@ -54,48 +54,54 @@ public class HaechandeulDataInitializer implements CommandLineRunner {
             kakaoOauthRepository.save(managerOauth);
         }
 
-        Optional<Manager> existingManager = managerRepository.findByKakaoOauth(managerOauth);
-        if (existingManager.isPresent()) {
-            System.out.println("--- " + managerEmail + " 사용자의 테스트 데이터가 이미 존재합니다. ---");
-            return;
+        Manager manager;
+        Optional<Manager> existingManagerOpt = managerRepository.findByKakaoOauth(managerOauth);
+
+        if (existingManagerOpt.isPresent()) {
+            manager = existingManagerOpt.get();
+            if ("haechandeul@naver.com".equals(managerEmail)) {
+                System.out.println("--- " + managerEmail + " 사용자가 이미 존재합니다. 새로운 공연을 생성합니다. ---");
+            } else {
+                System.out.println("--- " + managerEmail + " 사용자의 테스트 데이터가 이미 존재합니다. ---");
+                return;
+            }
+        } else {
+            System.out.println("--- " + managerEmail + " 사용자의 테스트 데이터 생성을 시작합니다. ---");
+            manager = Manager.builder()
+                    .kakaoOauth(managerOauth)
+                    .name(managerName)
+                    .introduction(managerIntroduction)
+                    .urls(List.of("http://example.com"))
+                    .build();
+            managerRepository.save(manager);
         }
 
-        System.out.println("--- " + managerEmail + " 사용자의 테스트 데이터 생성을 시작합니다. ---");
-
-        Manager newManager = Manager.builder()
-                .kakaoOauth(managerOauth)
-                .name(managerName)
-                .introduction(managerIntroduction)
-                .urls(List.of("http://example.com"))
-                .build();
-        managerRepository.save(newManager);
-
-        Location newLocation;
+        Location location;
         List<Seat> seats = new ArrayList<>();
 
         if ("haechandeul@naver.com".equals(managerEmail)) {
-            newLocation = locationRepository.findById(18L)
+            location = locationRepository.findById(18L)
                 .orElseThrow(() -> new RuntimeException("Location with ID 18 not found"));
         } else {
-            newLocation = Location.builder()
+            location = Location.builder()
                 .name(userName + " 아트센터")
                 .address("서울시 강남구 테헤란로 123")
                 .totalSeats(150)
                 .floor(2)
                 .type(DomainEnums.LocationType.SEATED)
                 .build();
-            locationRepository.save(newLocation);
+            locationRepository.save(location);
             
             for (int i = 1; i <= 5; i++) {
-                seats.add(Seat.builder().location(newLocation).floor(1).section("A").seatRow(1).seatColumn(i).seatNumber("A-" + i).build());
+                seats.add(Seat.builder().location(location).floor(1).section("A").seatRow(1).seatColumn(i).seatNumber("A-" + i).build());
             }
             seatRepository.saveAll(seats);
         }
 
 
         Shows newShow = Shows.builder()
-                .manager(newManager)
-                .location(newLocation)
+                .manager(manager)
+                .location(location)
                 .title(userName + "의 첫번째 공연")
                 .posterUrl("http://example.com/poster.jpg")
                 .bookingStartAt(LocalDateTime.now().plusDays(2))
