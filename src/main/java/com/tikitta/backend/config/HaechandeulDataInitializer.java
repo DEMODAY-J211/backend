@@ -70,21 +70,28 @@ public class HaechandeulDataInitializer implements CommandLineRunner {
                 .build();
         managerRepository.save(newManager);
 
-        Location newLocation = Location.builder()
+        Location newLocation;
+        List<Seat> seats = new ArrayList<>();
+
+        if ("haechandeul@naver.com".equals(managerEmail)) {
+            newLocation = locationRepository.findById(18L)
+                .orElseThrow(() -> new RuntimeException("Location with ID 18 not found"));
+        } else {
+            newLocation = Location.builder()
                 .name(userName + " 아트센터")
                 .address("서울시 강남구 테헤란로 123")
                 .totalSeats(150)
                 .floor(2)
                 .type(DomainEnums.LocationType.SEATED)
                 .build();
-        locationRepository.save(newLocation);
-
-        // 좌석 5개 생성
-        List<Seat> seats = new ArrayList<>();
-        for (int i = 1; i <= 5; i++) {
-            seats.add(Seat.builder().location(newLocation).floor(1).section("A").seatRow(1).seatColumn(i).seatNumber("A-" + i).build());
+            locationRepository.save(newLocation);
+            
+            for (int i = 1; i <= 5; i++) {
+                seats.add(Seat.builder().location(newLocation).floor(1).section("A").seatRow(1).seatColumn(i).seatNumber("A-" + i).build());
+            }
+            seatRepository.saveAll(seats);
         }
-        seatRepository.saveAll(seats);
+
 
         Shows newShow = Shows.builder()
                 .manager(newManager)
