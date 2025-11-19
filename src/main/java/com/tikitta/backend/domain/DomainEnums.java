@@ -60,7 +60,7 @@ public final class DomainEnums {
      */
     public enum ReservationStatus {
         PENDING_PAYMENT,    // 입금 대기
-        CONFIRMED,          // 예매 확정
+        CONFIRMED,          // 입금 확인
         CANCEL_REQUESTED,   // 환불(취소) 요청
         CANCELED            // 환불(취소) 완료
     }

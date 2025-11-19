@@ -107,7 +107,22 @@ public class ShowService {
                 .collect(Collectors.toList());
 
         List<ReservationDetailDto> reservationDetailDtoList = reservations.stream()
-                .map(ReservationDetailDto::fromEntity)
+                .map(reservation -> {
+                    boolean isReserved = reservation.getStatus() == DomainEnums.ReservationStatus.PENDING_PAYMENT ||
+                            reservation.getStatus() == DomainEnums.ReservationStatus.CONFIRMED;
+                    return new ReservationDetailDto(
+                            reservation.getId(),
+                            reservation.getShowTime().getId(),
+                            reservation.getUser().getId(),
+                            reservation.getReservationNumber(),
+                            reservation.getUser().getName(),
+                            reservation.getPhone(),
+                            reservation.getCreatedAt(),
+                            convertStatusToString(reservation.getStatus()), // 한글로 변환
+                            isReserved,
+                            new TicketDetailDto(reservation.getTicketOption(), reservation.getQuantity())
+                    );
+                })
                 .collect(Collectors.toList());
 
         // 6. 최종 응답 DTO 생성 및 반환
@@ -174,6 +189,21 @@ public class ShowService {
                 return DomainEnums.ReservationStatus.CANCELED;
             default:
                 throw new IllegalArgumentException("Invalid status: " + status);
+        }
+    }
+
+    private String convertStatusToString(DomainEnums.ReservationStatus status) {
+        switch (status) {
+            case PENDING_PAYMENT:
+                return "입금대기";
+            case CONFIRMED:
+                return "입금확인";
+            case CANCEL_REQUESTED:
+                return "환불대기";
+            case CANCELED:
+                return "환불완료";
+            default:
+                return status.name();
         }
     }
 
