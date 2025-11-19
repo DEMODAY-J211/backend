@@ -38,7 +38,7 @@ server:
         same-site: none
         http-only: true
         secure: true
-frontend-url: https://tikitta-q2ntmdwpe-hyunneees-projects.vercel.app
+frontend-url: https://tikitta.vercel.app/
 
 # Gabia SMS API Settings
 gabia:
