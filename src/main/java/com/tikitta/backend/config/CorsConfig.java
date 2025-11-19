@@ -15,9 +15,7 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:3000",
-                "http://localhost:8081",
-                "http://localhost:5173",
+                //"http://localhost:5173",
                 "https://localhost:5173",
                 "https://back-tikitta.duckdns.org",
                 "https://tikitta-q2ntmdwpe-hyunneees-projects.vercel.app",
