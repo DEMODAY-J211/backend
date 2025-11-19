@@ -1,4 +1,4 @@
-package com.tikitta.backend.dto;
+package com.tikitta.backend.dto.userbooking;
 
 import com.tikitta.backend.domain.*;
 import lombok.Getter;

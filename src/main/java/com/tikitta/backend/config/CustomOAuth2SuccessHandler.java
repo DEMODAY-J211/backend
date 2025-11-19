@@ -8,75 +8,96 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
 public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
+    private final CorsConfigurationSource corsConfigurationSource;
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
                                         Authentication authentication) throws IOException {
-        String frontendBaseUrl = "http://localhost:5173";
 
-        // 1. Service가 반환한 '커스텀' OAuth2User 객체 가져오기
-        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-        Map<String, Object> attributes = oAuth2User.getAttributes();
+        HttpSession session = request.getSession(false);
+        String frontendBaseUrl = determineFrontendBaseUrl(request, session);
 
-        // 2. Service가 넣어준 속성 꺼내기 (안전하게)
-        Object isSignupObj = attributes.get("isSignup");
-        boolean isSignup = (isSignupObj instanceof Boolean) ? (Boolean) isSignupObj : false;
+        String savedRedirectUri = getTargetUrlFromSession(session);
+        System.out.println("### [Login Success] 세션에 저장된 Redirect URI: " + savedRedirectUri + " ###");
 
-        Object roleObj = attributes.get("userRole");
-        String role = (roleObj instanceof String) ? (String) roleObj : "USER"; // 기본값 USER
+        String targetUrl;
 
-        String redirectUrl;
-
-        // 1. [회원가입 플로우]
-        if (isSignup) {
-            redirectUrl = frontendBaseUrl + "/landing";
-        } else {
-            if ("MANAGER".equalsIgnoreCase(role)) {
-                redirectUrl = frontendBaseUrl + "/homemanager";
+        if (savedRedirectUri != null) {
+            if (savedRedirectUri.startsWith("/")) {
+                targetUrl = frontendBaseUrl + savedRedirectUri;
             } else {
-                String relativePath = getDefaultUserRedirectUrl(request.getSession(false));
-                redirectUrl = frontendBaseUrl + "/homeuser";
+                targetUrl = savedRedirectUri;
+            }
+        } else {
+            OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+            Map<String, Object> attributes = oAuth2User.getAttributes();
+
+            boolean isSignup = (boolean) attributes.getOrDefault("isSignup", false);
+            String role = (String) attributes.getOrDefault("userRole", "USER");
+
+            if (isSignup) {
+                targetUrl = frontendBaseUrl + "/landing";
+            } else {
+                if ("MANAGER".equalsIgnoreCase(role)) {
+                    targetUrl = frontendBaseUrl + "/homemanager" + "?login=success";
+                } else {
+                    targetUrl = frontendBaseUrl + "/homeuser" + "?login=success";
+                }
             }
         }
 
-        HttpSession session = request.getSession(false);
+        System.out.println("### 최종 Redirect 될 URL: " + targetUrl + " ###");
+
         if (session != null) {
+            session.removeAttribute(RedirectUriSaveFilter.SAVED_REDIRECT_URI_ATTRIBUTE);
+            session.removeAttribute(OriginSaveFilter.SAVED_ORIGIN_ATTRIBUTE); // 사용한 Origin 정보도 세션에서 제거
             session.removeAttribute("selectedRole");
             session.removeAttribute("LAST_VISITED_MANAGER_ID");
         }
 
         clearAuthenticationAttributes(request);
-        getRedirectStrategy().sendRedirect(request, response, redirectUrl);
+        getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }
 
+    private String getTargetUrlFromSession(HttpSession session) {
+        if (session == null) {
+            return null;
+        }
+        String redirectUri = (String) session.getAttribute(RedirectUriSaveFilter.SAVED_REDIRECT_URI_ATTRIBUTE);
+        if (redirectUri != null && !redirectUri.isEmpty()) {
+            return redirectUri + "?login=success";
+        }
+        return null;
+    }
 
-    /**
-     * USER의 리다이렉트 URL을 결정하는 헬퍼 메소드
-     */
-    private String getDefaultUserRedirectUrl(HttpSession session) {
-        String managerId = null;
+    private String determineFrontendBaseUrl(HttpServletRequest request, HttpSession session) {
+        // 1. 세션에 저장된 Origin이 있는지 먼저 확인
         if (session != null) {
-            // ManagerIdSaveFilter가 저장한 세션 값 확인
-            Object managerIdObj = session.getAttribute("LAST_VISITED_MANAGER_ID");
-            if (managerIdObj instanceof String) {
-                managerId = (String) managerIdObj;
+            String savedOrigin = (String) session.getAttribute(OriginSaveFilter.SAVED_ORIGIN_ATTRIBUTE);
+            if (savedOrigin != null && !savedOrigin.isEmpty()) {
+                System.out.println("### [Origin Check] 세션에 저장된 Origin 사용: " + savedOrigin + " ###");
+                return savedOrigin;
             }
         }
 
-        if (managerId != null) {
-            // 저장된 managerId가 있으면 해당 main으로
-            return "/user/" + managerId + "/main";
-        } else {
-            // (예외 상황) 저장된 managerId가 없으면 테스트용 1번으로
-            return "/homeuser"; // (또는 "/" 루트 페이지)
-        }
+        // 2. 세션에 없다면 (예: 직접 /login/oauth2/code/kakao로 접근), 기존의 폴백 로직 사용
+        CorsConfiguration corsConfiguration = corsConfigurationSource.getCorsConfiguration(request);
+        List<String> allowedOrigins = corsConfiguration.getAllowedOrigins();
+        String defaultOrigin = (allowedOrigins != null && !allowedOrigins.isEmpty()) ? allowedOrigins.get(0) : "/";
+
+        System.out.println("### [Origin Check] 세션에 Origin 없음. 기본 URL 사용: " + defaultOrigin + " ###");
+        return defaultOrigin;
     }
 }

@@ -63,4 +63,9 @@ public class ReservationItem {//개별티켓
     public void setQrCodeUrl(String qrCodeUrl) {
         this.qrCodeUrl = qrCodeUrl;
     }
+
+    //좌석 변경용
+    public void setShowSeat(ShowSeat showSeat) {
+        this.showSeat = showSeat;
+    }
 }

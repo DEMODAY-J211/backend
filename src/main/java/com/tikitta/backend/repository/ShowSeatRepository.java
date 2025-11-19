@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 public interface ShowSeatRepository extends JpaRepository<ShowSeat,Long> {
     int countByShowTimeAndIsAvailable(ShowTime showTime, boolean isAvailable);
 
@@ -20,4 +22,7 @@ public interface ShowSeatRepository extends JpaRepository<ShowSeat,Long> {
     void deleteByShow(@Param("show") Shows show);
 
     boolean existsByShowTime_Show(Shows showTimeShow);
+
+    List<ShowSeat> findByShowTime(ShowTime showTime);
+
 }

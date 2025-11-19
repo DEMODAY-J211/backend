@@ -7,13 +7,10 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.SecurityContextPersistenceFilter;
-import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
@@ -22,53 +19,38 @@ public class SecurityConfig {
 
     private final OAuth2UserCustomService oAuth2UserCustomService;
     private final CustomOAuth2SuccessHandler customOAuth2SuccessHandler;
+    private final RedirectUriSaveFilter redirectUriSaveFilter;
+    private final OriginSaveFilter originSaveFilter; // 새로 추가
+    private final CorsConfigurationSource corsConfigurationSource;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .addFilterBefore(new ManagerIdSaveFilter(), SecurityContextPersistenceFilter.class)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS 설정 추가
-                .csrf(AbstractHttpConfigurer::disable) //테스트용으로 추가
+                .addFilterBefore(redirectUriSaveFilter, OAuth2AuthorizationRequestRedirectFilter.class)
+                .addFilterAfter(originSaveFilter, RedirectUriSaveFilter.class) // RedirectUriSaveFilter 다음에 실행되도록 추가
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
+                                "/",
                                 "/user/*/main",
                                 "/user/*/detail/**",
                                 "/user/*/organization",
-                                "/auth/**" // /auth/kakao/dev-login 등 포함
+                                "/auth/**",
+                                "/api/test/**"
                         ).permitAll()
                         .requestMatchers("/manager/**").hasRole("MANAGER")
                         .requestMatchers("/user/*/myshow", "/user/*/booking/**", "/user/*/ticket/**").hasRole("USER")
                         .anyRequest().authenticated()
                 )
-
                 .oauth2Login(oauth -> oauth
                         .userInfoEndpoint(userInfo -> userInfo.userService(oAuth2UserCustomService))
                         .successHandler(customOAuth2SuccessHandler)
                         .failureUrl("/login?error=true")
                 );
 
-
         return http.build();
-    }
-
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-
-        configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:3000", // React 기본 포트
-                "http://localhost:8081", // 다른 흔한 포트
-                "http://localhost:5173",  // Vite 기본 포트
-                "https://localhost:5173",
-                "https://back-tikitta.duckdns.org"
-        ));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
     }
 }

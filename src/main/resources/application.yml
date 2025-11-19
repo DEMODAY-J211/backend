@@ -9,7 +9,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
   security:
     oauth2:
       client:
@@ -38,3 +38,11 @@ server:
         same-site: none
         http-only: true
         secure: true
+frontend-url: https://tikitta.vercel.app/
+
+# Gabia SMS API Settings
+gabia:
+  sms:
+    id: "haechandeul"
+    api-key: ${GABIA_API_KEY} # 환경 변수에서 API 키를 읽어옵니다.
+    callback: "01030762799" # 여기에 실제 발신번호를 입력하세요.

@@ -20,10 +20,11 @@ public class ShowDetailResponse {
     private String showLocation;
     private String showPosterPicture;
     private List<ShowTimeDto> showtimeList;
-    private List<TicketOptionDto> ticketOptionList; // ◀ JSON 예시와 달리 List로 구현
+    private List<TicketOptionDto> ticketOptionList;
     private ManagerInfoDto managerInfo;
     private String showDetailText;
     private LocalDateTime bookingStartAt;
+    private String saleMethod;
 
     public ShowDetailResponse(Shows show){
         this.showId = show.getId();
@@ -32,9 +33,13 @@ public class ShowDetailResponse {
         this.showPosterPicture = show.getPosterUrl();
         this.showDetailText = show.getDetailText();
         this.bookingStartAt = show.getBookingStartAt();
+        this.saleMethod = show.getSaleMethod().name();
 
-        ShowTime earliest = show.getShowTimes().stream().min(Comparator.comparing(ShowTime::getStartAt)).get();
-        ShowTime latest = show.getShowTimes().stream().max(Comparator.comparing(ShowTime::getStartAt)).get();
+
+        ShowTime earliest = show.getShowTimes().stream()
+                .min(Comparator.comparing(ShowTime::getStartAt)).get();
+        ShowTime latest = show.getShowTimes().stream()
+                .max(Comparator.comparing(ShowTime::getStartAt)).get();
 
         this.showStartDate = earliest.getStartAt();
         this.showtimeEndDate = latest.getStartAt();
@@ -75,7 +80,7 @@ public class ShowDetailResponse {
     @Getter
     private static class ManagerInfoDto {
         private String managerName;
-        private String managerEmail; // ◀ JSON 예시와 다르지만, 기존 코드를 따름
+        private String managerEmail;
 
         public ManagerInfoDto(Manager manager) {
             this.managerName = manager.getName();

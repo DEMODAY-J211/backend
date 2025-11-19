@@ -2,21 +2,18 @@ package com.tikitta.backend.service;
 
 import com.tikitta.backend.domain.*;
 import com.tikitta.backend.dto.*;
+import com.tikitta.backend.dto.ReservationDetailDto;
 import com.tikitta.backend.repository.*;
 import java.util.ArrayList;
 import java.util.List;
 import com.tikitta.backend.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils; // StringUtils import
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -111,7 +108,22 @@ public class ShowService {
                 .collect(Collectors.toList());
 
         List<ReservationDetailDto> reservationDetailDtoList = reservations.stream()
-                .map(ReservationDetailDto::fromEntity)
+                .map(reservation -> {
+                    boolean isReserved = reservation.getStatus() == DomainEnums.ReservationStatus.PENDING_PAYMENT ||
+                            reservation.getStatus() == DomainEnums.ReservationStatus.CONFIRMED;
+                    return new ReservationDetailDto(
+                            reservation.getId(),
+                            reservation.getShowTime().getId(),
+                            reservation.getUser().getId(),
+                            reservation.getReservationNumber(),
+                            reservation.getUser().getName(),
+                            reservation.getPhone(),
+                            reservation.getCreatedAt(),
+                            convertStatusToString(reservation.getStatus()), // 한글로 변환
+                            isReserved,
+                            new TicketDetailDto(reservation.getTicketOption(), reservation.getQuantity())
+                    );
+                })
                 .collect(Collectors.toList());
 
         // 6. 최종 응답 DTO 생성 및 반환
@@ -170,14 +182,29 @@ public class ShowService {
 
     private DomainEnums.ReservationStatus convertStatus(String status) {
         switch (status) {
-            case "입금확인":
+            case "입금확정":
                 return DomainEnums.ReservationStatus.CONFIRMED;
             case "환불대기":
                 return DomainEnums.ReservationStatus.CANCEL_REQUESTED;
-            case "환불완료":
+            case "취소완료":
                 return DomainEnums.ReservationStatus.CANCELED;
             default:
                 throw new IllegalArgumentException("Invalid status: " + status);
+        }
+    }
+
+    private String convertStatusToString(DomainEnums.ReservationStatus status) {
+        switch (status) {
+            case PENDING_PAYMENT:
+                return "입금대기";
+            case CONFIRMED:
+                return "입금확정";
+            case CANCEL_REQUESTED:
+                return "환불대기";
+            case CANCELED:
+                return "취소완료";
+            default:
+                return status.name();
         }
     }
 

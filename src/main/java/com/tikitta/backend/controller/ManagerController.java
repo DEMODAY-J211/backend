@@ -200,6 +200,27 @@ public class ManagerController {
         return ResponseEntity.ok(new ApiResponse<>(locations));
     }
 
+    @GetMapping("/organizationview")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<ApiResponse<Map<String, ManagerInfoResponse>>> getMyOrganizationInfo(Authentication authentication) {
+        ManagerInfoResponse managerInfo = managerService.getMyOrganizationInfo(authentication);
+        return ResponseEntity.ok(new ApiResponse<>(Map.of("manager", managerInfo))
+        );
+    }
+
+    @PatchMapping("/organizationpatch")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<ApiResponse<Map<String, ManagerInfoResponse>>> updateMyOrganization(
+            @RequestBody ManagerUpdateRequest request,
+            Authentication authentication
+    ) {
+        ManagerInfoResponse updated = managerService.updateMyOrganizationInfo(authentication, request);
+
+        // message를 "success" 고정으로 쓰기로 했으니까 이 생성자 사용
+        return ResponseEntity.ok(
+                new ApiResponse<>(Map.of("manager", updated))
+        );
+    }
 //------등록된 공연 수정------//
 
     @GetMapping("shows/{showId}/edit")
@@ -238,6 +259,12 @@ public class ManagerController {
 
     }
 
+    @GetMapping("/venue/like")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<ApiResponse<LocationLikeResponse>> likeVenue(@RequestParam("id") Long locationId) {
+        LocationLikeResponse response = managerService.likeVenue(locationId);
+        return ResponseEntity.ok(new ApiResponse<>(200, "success-좋아요~", response));
+    }
     @PostMapping("/shows/{showId}/publish")
     public ResponseEntity<ApiResponse<ShowUpdateResponse>> updatePublish(
             @PathVariable("showId") Long showId

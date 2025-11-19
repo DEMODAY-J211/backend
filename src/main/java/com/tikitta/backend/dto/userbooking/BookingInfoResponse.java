@@ -1,9 +1,8 @@
-package com.tikitta.backend.dto;
+package com.tikitta.backend.dto.userbooking;
 
 import com.tikitta.backend.domain.ShowTime;
 import com.tikitta.backend.domain.Shows;
 import com.tikitta.backend.domain.TicketOption;
-import com.tikitta.backend.repository.ShowSeatRepository;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
