@@ -64,7 +64,8 @@ public class SecurityConfig {
                 "http://localhost:8081",
                 "http://localhost:5173",
                 "https://localhost:5173",
-                "https://back-tikitta.duckdns.org"
+                "https://back-tikitta.duckdns.org",
+                "https://tikitta-q2ntmdwpe-hyunneees-projects.vercel.app"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
