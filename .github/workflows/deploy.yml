@@ -16,7 +16,8 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 2. AWS Credentials 설정
+      # 2. AWS Credentials 설정 (이 단계는 Runner에서 AWS CLI 등을 사용할 때 유효합니다.
+      #    EC2에 전달하기 위해 아래 스크립트에서 사용합니다.)
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -35,6 +36,7 @@ jobs:
           script: |
             PROJECT_DIR="/backend"
             JAR_NAME="backend-0.0.1-SNAPSHOT.jar"
+            REGION="ap-northeast-2" # AWS Region
 
             echo "== 1. 프로젝트 디렉토리로 이동 =="
             cd ${PROJECT_DIR} || exit 1
@@ -58,11 +60,16 @@ jobs:
                 sleep 5
             fi
 
-            echo "== 6. 새 JAR 실행 =="
-            export GABIA_SMS_API_KEY=${{ secrets.GABIA_API_KEY }}
-  
+            echo "== 6. 새 JAR 실행 (AWS 자격 증명 주입) =="
             nohup java \
-              -Dgabia.sms.api-key=$GABIA_SMS_API_KEY \
+              # 일반 속성
+              -Dgabia.sms.api-key='${{ secrets.GABIA_API_KEY }}' \
+              \
+              # AWS 자격 증명을 Spring Cloud AWS/SDK 설정에 맞춰 시스템 속성으로 주입
+              -Dcloud.aws.credentials.accessKey='${{ secrets.AWS_ACCESS_KEY }}' \
+              -Dcloud.aws.credentials.secretKey='${{ secrets.AWS_SECRET_KEY }}' \
+              -Dcloud.aws.region.static=${REGION} \
+              \
               -jar build/libs/${JAR_NAME} > app.log 2>&1 &
 
             echo "Deployment finished successfully."
