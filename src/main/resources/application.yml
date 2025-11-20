@@ -40,6 +40,16 @@ server:
         secure: true
 frontend-url: https://tikitta.vercel.app/
 
+cloud:
+  aws:
+    credentials:
+      accessKey: ${AWS_ACCESS_KEY}
+      secretKey: ${AWS_SECRET_KEY}
+    s3:
+      bucket: tikitta-s3
+    region:
+      static: ap-northeast-2
+
 # Gabia SMS API Settings
 gabia:
   sms:
