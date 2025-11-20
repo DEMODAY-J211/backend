@@ -61,15 +61,12 @@ jobs:
             fi
 
             echo "== 6. 새 JAR 실행 (AWS 자격 증명 주입) =="
+            # Java 실행 명령어를 한 줄 또는 백슬래시 뒤에 주석 없이 작성하여 명령어가 이어지도록 수정합니다.
             nohup java \
-              # 일반 속성
               -Dgabia.sms.api-key='${{ secrets.GABIA_API_KEY }}' \
-              \
-              # AWS 자격 증명을 Spring Cloud AWS/SDK 설정에 맞춰 시스템 속성으로 주입
               -Dcloud.aws.credentials.accessKey='${{ secrets.AWS_ACCESS_KEY }}' \
               -Dcloud.aws.credentials.secretKey='${{ secrets.AWS_SECRET_KEY }}' \
               -Dcloud.aws.region.static=${REGION} \
-              \
               -jar build/libs/${JAR_NAME} > app.log 2>&1 &
 
             echo "Deployment finished successfully."
