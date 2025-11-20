@@ -1,10 +1,14 @@
 package com.tikitta.backend.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tikitta.backend.domain.*;
 import com.tikitta.backend.dto.*;
 import com.tikitta.backend.dto.ReservationDetailDto;
 import com.tikitta.backend.repository.*;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import com.tikitta.backend.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +36,9 @@ public class ShowService {
     private final ShowTimeRepository showTimeRepository;
     private final ShowSeatRepository showSeatRepository;
     private final MessageRepository messageRepository;
+    private final LocationMapRepository locationMapRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
 
     // ... (기존 getMyShows, getReservationList 메소드)
     public MyShowListResponseDto getMyShows() {
@@ -355,18 +362,15 @@ public class ShowService {
     }
 
     //좌석별 조회
-    @Transactional
-    public List<ReservationSeatListResponse> getReservationSeatList(Long showId, Long showtimeId, String keyword) {
+    @Transactional(readOnly = true)
+    public CheckinResponse getReservationSeatList(Long showId, Long showtimeId, String keyword) {
         KakaoOauth user = authUtil.getCurrentUser();
-
-        // 매니저 조회
         Manager manager = managerRepository.findByKakaoOauth(user)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자의 매니저 정보를 찾을 수 없습니다."));
 
         Shows show = showsRepository.findById(showId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 공연입니다."));
 
-        //회차 목록 조회 및 선택
         List<ShowTime> allShowTimes = show.getShowTimes().stream()
                 .sorted(Comparator.comparing(ShowTime::getStartAt))
                 .collect(Collectors.toList());
@@ -385,7 +389,7 @@ public class ShowService {
             selectedShowTime = allShowTimes.get(0);
         }
 
-        // 4. 예매 좌석 목록 조회 (이름, 좌석번호 기준 검색)
+        // 예매 좌석 목록 조회
         List<ReservationItem> reservationItems;
         if (StringUtils.hasText(keyword)) {
             reservationItems = reservationItemRepository.findReservationItemsByShowTimeAndKeyword(selectedShowTime, keyword);
@@ -393,8 +397,7 @@ public class ShowService {
             reservationItems = reservationItemRepository.findReservationItemsByShowTime(selectedShowTime);
         }
 
-        // 5. DTO 변환
-        List<ReservationSeatListResponse> responseList = reservationItems.stream()
+        List<ReservationSeatListResponse> reservationList = reservationItems.stream()
                 .map(ri -> ReservationSeatListResponse.builder()
                         .reservationItemId(ri.getId())
                         .reservationId(ri.getReservation().getId())
@@ -405,13 +408,44 @@ public class ShowService {
                         .ticketOptionId(ri.getReservation().getTicketOption().getId())
                         .isEntered(ri.isEntered())
                         .isReserved(ri.getReservation() != null &&
-                                ri.getReservation().getStatus() != DomainEnums.ReservationStatus.CANCEL_REQUESTED)
+                                ri.getReservation().getStatus() != DomainEnums.ReservationStatus.CANCELED)
                         .reservationTime(ri.getReservation().getCreatedAt())
                         .build())
                 .collect(Collectors.toList());
 
-        // 6. 반환
-        return responseList;
+        // 좌석 배치도 생성
+        List<List<Object>> seatMap = null;
+        if (show.getSaleMethod() != DomainEnums.SaleMethod.STANDING) {
+            try {
+                LocationMap locationMap = locationMapRepository.findByLocationId(show.getLocation().getId())
+                        .orElseThrow(() -> new IllegalStateException("해당 공연장의 좌석 배치도 정보를 찾을 수 없습니다."));
+
+                int height = locationMap.getLayoutHeight();
+                int width = locationMap.getLayoutWidth();
+                seatMap = new ArrayList<>();
+                for (int i = 0; i < height; i++) {
+                    seatMap.add(new ArrayList<>(Collections.nCopies(width, 0)));
+                }
+
+                List<List<Integer>> stageCoords = objectMapper.readValue(locationMap.getStageCoordinates(), new TypeReference<>() {});
+                for (List<Integer> coord : stageCoords) {
+                    seatMap.get(coord.get(0)).set(coord.get(1), -1);
+                }
+
+                List<ShowSeat> showSeats = showSeatRepository.findByShowTime(selectedShowTime);
+                for (ShowSeat showSeat : showSeats) {
+                    Seat seat = showSeat.getSeat();
+                    seatMap.get(seat.getSeatRow()).set(seat.getSeatColumn(), seat.getSeatNumber());
+                }
+            } catch (IOException e) {
+                throw new RuntimeException("좌석 배치도 데이터를 처리하는 중 오류가 발생했습니다.", e);
+            }
+        }
+
+        return CheckinResponse.builder()
+                .seat(seatMap)
+                .reservation(reservationList)
+                .build();
     }
 
     public ShowDraftResponse getPublishShow(Long showId){
