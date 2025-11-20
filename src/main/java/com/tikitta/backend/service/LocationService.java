@@ -114,7 +114,7 @@ public class LocationService {
                 .collect(Collectors.toMap(ss -> ss.getSeat().getSeatRow() + "," + ss.getSeat().getSeatColumn(), Function.identity()));
 
         // 2. 요청으로 받은 vip_seat_map 순회
-        List<List<Integer>> vipSeatMap = request.getSeatMap();
+        List<List<Object>> vipSeatMap = request.getSeatMap();
         long updatedCount = 0;
         
         // 3. 모든 좌석의 isGoodSeat를 false로 초기화
@@ -125,7 +125,8 @@ public class LocationService {
         // 4. VIP로 지정된 좌석만 isGoodSeat를 true로 설정
         for (int i = 0; i < vipSeatMap.size(); i++) {
             for (int j = 0; j < vipSeatMap.get(i).size(); j++) {
-                if (vipSeatMap.get(i).get(j) == 1) {
+                Object cell = vipSeatMap.get(i).get(j);
+                if (cell instanceof Integer && (Integer) cell == 1) {
                     String coords = i + "," + j;
                     ShowSeat showSeat = showSeatMapByCoords.get(coords);
                     if (showSeat != null) {
@@ -146,7 +147,6 @@ public class LocationService {
                 .build();
     }
     
-    // ... (다른 메소드들은 그대로 유지)
     @Transactional
     public Location registerLocation(VenueRegisterRequest request, MultipartFile locationPicture) {
         String pictureUrl = saveFile(locationPicture);
@@ -240,15 +240,47 @@ public class LocationService {
         LocationMap locationMap = locationMapRepository.findByLocationId(locationId)
                 .orElseThrow(() -> new EntityNotFoundException("Seat map not found for locationId: " + locationId));
 
+        List<ShowSeat> draftShowSeats = showSeatRepository.findDraftShowSeatsByLocationId(locationId);
+
         try {
-            List<List<Object>> seatMap = objectMapper.readValue(locationMap.getSeatMapData(), new TypeReference<>() {});
+            // 임시 저장된 ShowSeat이 없으면 기존 로직대로 LocationMap의 데이터를 반환
+            if (draftShowSeats.isEmpty()) {
+                List<List<Object>> seatMap = objectMapper.readValue(locationMap.getSeatMapData(), new TypeReference<>() {});
+                return VenueSeatmapResponse.builder()
+                        .location(locationMap.getLocation().getName())
+                        .layoutWidth(locationMap.getLayoutWidth())
+                        .layoutHeight(locationMap.getLayoutHeight())
+                        .seatMap(seatMap)
+                        .build();
+            }
+
+            // 임시 저장된 ShowSeat이 있으면 이를 기반으로 seat_map을 재구성
+            int height = locationMap.getLayoutHeight();
+            int width = locationMap.getLayoutWidth();
+            List<List<Object>> newSeatMap = new ArrayList<>();
+            for (int i = 0; i < height; i++) {
+                newSeatMap.add(new ArrayList<>(Collections.nCopies(width, 0)));
+            }
+
+            // 무대(-1) 배치
+            List<List<Integer>> stageCoords = objectMapper.readValue(locationMap.getStageCoordinates(), new TypeReference<>() {});
+            for (List<Integer> coord : stageCoords) {
+                newSeatMap.get(coord.get(0)).set(coord.get(1), -1);
+            }
+
+            // 좌석(seatNumber) 배치
+            for (ShowSeat showSeat : draftShowSeats) {
+                Seat seat = showSeat.getSeat();
+                newSeatMap.get(seat.getSeatRow()).set(seat.getSeatColumn(), seat.getSeatNumber());
+            }
 
             return VenueSeatmapResponse.builder()
                     .location(locationMap.getLocation().getName())
-                    .layoutWidth(locationMap.getLayoutWidth())
-                    .layoutHeight(locationMap.getLayoutHeight())
-                    .seatMap(seatMap)
+                    .layoutWidth(width)
+                    .layoutHeight(height)
+                    .seatMap(newSeatMap)
                     .build();
+
         } catch (IOException e) {
             throw new RuntimeException("Failed to deserialize seat map data", e);
         }
