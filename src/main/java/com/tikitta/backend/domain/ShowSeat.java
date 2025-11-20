@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Getter
@@ -18,7 +19,7 @@ public class ShowSeat {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "show_time_id", nullable = false)
+    @JoinColumn(name = "show_time_id", nullable = true)
     private ShowTime showTime;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -28,6 +29,7 @@ public class ShowSeat {
     @Column(name = "is_available", nullable = false)
     private boolean isAvailable = true;
 
+    @Setter
     @Column(name = "is_good_seat")
     private Boolean isGoodSeat;
 

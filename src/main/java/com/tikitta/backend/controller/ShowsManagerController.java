@@ -34,7 +34,7 @@ public class ShowsManagerController {
     public ResponseEntity<?> updateSeatmap(
             @PathVariable Long locationId,
             @RequestBody SeatDeleteRequest request) {
-        SeatDeleteResponse response = locationService.updateSeatmap(locationId, request);
+        SeatDeleteResponse response = locationService.createShowSeatsFromMap(locationId, request);
         return ResponseEntity.ok().body(Map.of(
                 "success", true,
                 "code", 200,

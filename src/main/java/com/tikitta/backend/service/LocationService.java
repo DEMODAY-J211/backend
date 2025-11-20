@@ -9,6 +9,7 @@ import com.tikitta.backend.repository.LocationMapRepository;
 import com.tikitta.backend.repository.LocationRepository;
 import com.tikitta.backend.repository.ManagerRepository;
 import com.tikitta.backend.repository.SeatRepository;
+import com.tikitta.backend.repository.ShowSeatRepository;
 import com.tikitta.backend.util.AuthUtil;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -34,9 +35,117 @@ public class LocationService {
     private final ManagerRepository managerRepository;
     private final SeatRepository seatRepository;
     private final LocationMapRepository locationMapRepository;
+    private final ShowSeatRepository showSeatRepository;
     private final AuthUtil authUtil;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final String uploadDir = "src/main/resources/static/images/";
+
+    @Transactional
+    public SeatDeleteResponse createShowSeatsFromMap(Long locationId, SeatDeleteRequest request) {
+        try {
+            // 1. 원본 LocationMap 및 Location 조회
+            LocationMap locationMap = locationMapRepository.findByLocationId(locationId)
+                    .orElseThrow(() -> new EntityNotFoundException("Seat map not found for locationId: " + locationId));
+            Location location = locationMap.getLocation();
+
+            // 2. 해당 Location의 모든 Seat를 좌표 기반 Map으로 변환
+            List<Seat> allSeatsInLocation = seatRepository.findByLocation(location);
+            Map<String, Seat> seatMapByCoords = allSeatsInLocation.stream()
+                .collect(Collectors.toMap(s -> s.getSeatRow() + "," + s.getSeatColumn(), Function.identity()));
+
+            // 3. 원본 좌석맵에서 좌표 Set 생성
+            List<List<Object>> originalSeatMap = objectMapper.readValue(locationMap.getSeatMapData(), new TypeReference<>() {});
+            Set<String> originalSeatCoords = new HashSet<>();
+            for (int i = 0; i < originalSeatMap.size(); i++) {
+                for (int j = 0; j < originalSeatMap.get(i).size(); j++) {
+                    if (originalSeatMap.get(i).get(j) instanceof String) {
+                        originalSeatCoords.add(i + "," + j);
+                    }
+                }
+            }
+
+            // 4. 요청으로 들어온 새로운 좌석맵 처리 및 ShowSeat 생성
+            List<List<Object>> newSeatMap = request.getSeatMap();
+            Set<String> newSeatCoords = new HashSet<>();
+            List<ShowSeat> showSeatsToCreate = new ArrayList<>();
+
+            for (int i = 0; i < newSeatMap.size(); i++) {
+                for (int j = 0; j < newSeatMap.get(i).size(); j++) {
+                    if (newSeatMap.get(i).get(j) instanceof String) {
+                        String currentCoords = i + "," + j;
+                        newSeatCoords.add(currentCoords);
+                        
+                        Seat seat = seatMapByCoords.get(currentCoords);
+                        if (seat != null) {
+                            ShowSeat showSeat = ShowSeat.builder()
+                                .seat(seat)
+                                .showTime(null)
+                                .isAvailable(true)
+                                .isGoodSeat(false)
+                                .build();
+                            showSeatsToCreate.add(showSeat);
+                        }
+                    }
+                }
+            }
+            showSeatRepository.saveAll(showSeatsToCreate);
+
+            // 5. 변경된(삭제된) 좌석 수 계산
+            Set<String> removedCoords = new HashSet<>(originalSeatCoords);
+            removedCoords.removeAll(newSeatCoords);
+            long updatedCount = removedCoords.size();
+
+            // 6. 최종 응답 생성
+            return SeatDeleteResponse.builder()
+                    .updatedSeatCount(updatedCount)
+                    .totalAvailableSeats((long) showSeatsToCreate.size())
+                    .build();
+
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to process seat map update", e);
+        }
+    }
+
+    @Transactional
+    public SeatVipResponse updateVipSeats(Long locationId, SeatVipRequest request) {
+        // 1. locationId로 showTime이 null인 ShowSeat들을 조회하고, 좌표를 키로 하는 맵으로 변환
+        List<ShowSeat> draftShowSeats = showSeatRepository.findDraftShowSeatsByLocationId(locationId);
+        Map<String, ShowSeat> showSeatMapByCoords = draftShowSeats.stream()
+                .collect(Collectors.toMap(ss -> ss.getSeat().getSeatRow() + "," + ss.getSeat().getSeatColumn(), Function.identity()));
+
+        // 2. 요청으로 받은 vip_seat_map 순회
+        List<List<Integer>> vipSeatMap = request.getSeatMap();
+        long updatedCount = 0;
+        
+        // 3. 모든 좌석의 isGoodSeat를 false로 초기화
+        for (ShowSeat showSeat : draftShowSeats) {
+            showSeat.setIsGoodSeat(false);
+        }
+
+        // 4. VIP로 지정된 좌석만 isGoodSeat를 true로 설정
+        for (int i = 0; i < vipSeatMap.size(); i++) {
+            for (int j = 0; j < vipSeatMap.get(i).size(); j++) {
+                if (vipSeatMap.get(i).get(j) == 1) {
+                    String coords = i + "," + j;
+                    ShowSeat showSeat = showSeatMapByCoords.get(coords);
+                    if (showSeat != null) {
+                        if (showSeat.getIsGoodSeat() != null && !showSeat.getIsGoodSeat()) {
+                             updatedCount++;
+                        }
+                        showSeat.setIsGoodSeat(true);
+                    }
+                }
+            }
+        }
+        
+        showSeatRepository.saveAll(draftShowSeats);
+
+        return SeatVipResponse.builder()
+                .updatedSeatCount(updatedCount)
+                .totalAvailableSeats((long) draftShowSeats.size())
+                .build();
+    }
+    
     // ... (다른 메소드들은 그대로 유지)
     @Transactional
     public Location registerLocation(VenueRegisterRequest request, MultipartFile locationPicture) {
@@ -216,75 +325,6 @@ public class LocationService {
 
         } catch (IOException e) {
             throw new RuntimeException("Failed to process seat map update", e);
-        }
-    }
-
-    @Transactional
-    public SeatVipResponse updateVipSeats(Long locationId, SeatVipRequest request) {
-        LocationMap locationMap = locationMapRepository.findByLocationId(locationId)
-                .orElseThrow(() -> new EntityNotFoundException("Seat map not found for locationId: " + locationId));
-
-        try {
-            List<List<Object>> originalSeatMap = objectMapper.readValue(locationMap.getSeatMapData(), new TypeReference<>() {});
-            List<List<Object>> vipMask = request.getSeatMap();
-
-            List<String> seatsToUpdateToVip = new ArrayList<>();
-            List<String> seatsToUpdateToNormal = new ArrayList<>();
-            long totalAvailableSeats = 0;
-
-            int rows = Math.min(originalSeatMap.size(), vipMask.size());
-            for (int i = 0; i < rows; i++) {
-                List<Object> originalRow = originalSeatMap.get(i);
-                List<Object> maskRow = vipMask.get(i);
-                int cols = Math.min(originalRow.size(), maskRow.size());
-
-                for (int j = 0; j < cols; j++) {
-                    Object originalCell = originalRow.get(j);
-                    Object maskCell = maskRow.get(j);
-
-                    if (originalCell instanceof String) {
-                        totalAvailableSeats++;
-                        String seatNumber = (String) originalCell;
-                        if (maskCell instanceof Integer && (Integer) maskCell == 1) {
-                            seatsToUpdateToVip.add(seatNumber);
-                        } else {
-                            seatsToUpdateToNormal.add(seatNumber);
-                        }
-                    }
-                }
-            }
-
-            // DB 업데이트
-            long updatedCount = 0;
-            if (!seatsToUpdateToVip.isEmpty()) {
-                List<Seat> seats = seatRepository.findByLocationIdAndSeatNumberIn(locationId, seatsToUpdateToVip);
-                for (Seat seat : seats) {
-                    if (!"VIP".equals(seat.getSection())) {
-                        seat.setSection("VIP");
-                        updatedCount++;
-                    }
-                }
-                seatRepository.saveAll(seats);
-            }
-
-            if (!seatsToUpdateToNormal.isEmpty()) {
-                List<Seat> seats = seatRepository.findByLocationIdAndSeatNumberIn(locationId, seatsToUpdateToNormal);
-                for (Seat seat : seats) {
-                    if (!"X".equals(seat.getSection())) {
-                        seat.setSection("X");
-                        updatedCount++;
-                    }
-                }
-                seatRepository.saveAll(seats);
-            }
-
-            return SeatVipResponse.builder()
-                    .updatedSeatCount(updatedCount)
-                    .totalAvailableSeats(totalAvailableSeats)
-                    .build();
-
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to process VIP seat update", e);
         }
     }
     
