@@ -177,13 +177,13 @@ public class ManagerController {
     }
 
     @GetMapping("/shows/{showId}/checkin/search")
-    public ResponseEntity<List<ReservationSeatListResponse>> getReservationSeatList(
+    public ResponseEntity<ApiResponse<CheckinResponse>> getReservationSeatList(
             @PathVariable("showId") Long showId,
             @RequestParam(value = "showtimeId", required = false) Long showtimeId,
             @RequestParam(value = "keyword", required = false) String keyword
     ) {
-        List<ReservationSeatListResponse> response = showService.getReservationSeatList(showId, showtimeId, keyword);
-        return ResponseEntity.ok(response);
+        CheckinResponse response = showService.getReservationSeatList(showId, showtimeId, keyword);
+        return ResponseEntity.ok(new ApiResponse<>(response));
     }
 
     @GetMapping("/shows/venues")
@@ -258,6 +258,8 @@ public class ManagerController {
         return ResponseEntity.ok(new ApiResponse<>(200,"임시저장 되었습니다.",response));
 
     }
+
+
 
     @PostMapping("/shows/{showId}/publish")
     public ResponseEntity<ApiResponse<ShowUpdateResponse>> updatePublish(
