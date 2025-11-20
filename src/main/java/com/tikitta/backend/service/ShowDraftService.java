@@ -386,6 +386,7 @@ public class ShowDraftService {
                 .build();
     }
 
+    /*TODO: S3에서도 삭제하는 코드 추가하기*/
     public ShowDraftDeleteResponse deleteShowDraft() {
 
         KakaoOauth user = authUtil.getCurrentUser();

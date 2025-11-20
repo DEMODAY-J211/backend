@@ -67,6 +67,7 @@ public class UserBookingService {
             return showSeatRepository.countByShowTimeAndIsAvailable(showTime, true);
         }
 
+        /*TODO: long int 문제 발생*/
         // 2. 그 외 (스탠딩, 스케줄링, 주최자선택) 공연일 경우 (수량 계산)
         else {
             Long totalQuantity = showTime.getTotalStandingQuantity();
