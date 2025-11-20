@@ -59,7 +59,10 @@ jobs:
             fi
 
             echo "== 6. 새 JAR 실행 =="
-            nohup java -Dgabia.sms.api-key='${{ secrets.GABIA_API_KEY }}' \
+            export GABIA_SMS_API_KEY=${{ secrets.GABIA_API_KEY }}
+  
+            nohup java \
+              -Dgabia.sms.api-key=$GABIA_SMS_API_KEY \
               -jar build/libs/${JAR_NAME} > app.log 2>&1 &
 
             echo "Deployment finished successfully."
