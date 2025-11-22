@@ -29,7 +29,7 @@ public class UserBookingController {
     private final ShowTimeRepository showTimeRepository;
     private final TicketOptionRepository ticketOptionRepository;
 
-    @GetMapping("/{showId}/reserveInfo") // ◀ 2. 엔드포인트 추가
+    @GetMapping("/{showId}/reserveInfo")
     public ResponseEntity<ApiResponse<BookingInfoResponse>> getReserveInfo(
             @PathVariable Long showId) {
 
@@ -51,7 +51,7 @@ public class UserBookingController {
                 requestDto.getTicketOptionId(),
                 requestDto.getQuantity(),
                 totalPrice,
-                null, null, null, null,   // 페이지 3 정보
+                null, null, null, null,
                 null, null
         );
 
@@ -134,7 +134,7 @@ public class UserBookingController {
         return ResponseEntity.ok(new ApiResponse<>(reservationId));
     }
 
-    @PostMapping("/{reservationId}/cancel") // 상태 변경이므로 POST 사용
+    @PostMapping("/{reservationId}/cancel")
     public ResponseEntity<ApiResponse<String>> requestCancelReservation(
             @PathVariable Long reservationId,
             Authentication authentication) {
@@ -152,7 +152,7 @@ public class UserBookingController {
                     .body(new ApiResponse<>(HttpStatus.FORBIDDEN.value(), e.getMessage()));
         } catch (Exception e) {
             // 기타 예상치 못한 오류 처리 (500 Internal Server Error)
-            log.error("예매 취소 중 오류 발생: Reservation ID {}", reservationId, e); // 로깅 추가 권장
+            log.error("예매 취소 중 오류 발생: Reservation ID {}", reservationId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), "예매 취소 중 오류가 발생했습니다."));
         }
