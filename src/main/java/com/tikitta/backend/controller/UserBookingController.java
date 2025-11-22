@@ -25,7 +25,6 @@ import java.util.Map;
 public class UserBookingController {
 
     private final UserBookingService userBookingService;
-
     private final KakaoOauthRepository kakaoOauthRepository;
     private final ShowTimeRepository showTimeRepository;
     private final TicketOptionRepository ticketOptionRepository;
