@@ -27,7 +27,6 @@ public class ShowDraftService {
     private final AuthUtil authUtil;
     private final LocationRepository locationRepository;
     private final ShowSeatRepository showSeatRepository;
-    private final SeatRepository seatRepository;
     private final MessageRepository messageRepository;
     private final RestClient.Builder builder;
     private final ShowTimeRepository showTimeRepository;
@@ -67,7 +66,7 @@ public class ShowDraftService {
         updateBasicFields(draft, request);
 
         if(request.getLocationId() != null && (draft.getLocation() == null || !draft.getLocation().getId().equals(request.getLocationId()))){
-            updateLocationAndCloneSeats(draft,request.getLocationId());
+            updateLocation(draft,request.getLocationId());
         }
 
         if(request.getShowTimes() != null){
@@ -115,57 +114,16 @@ public class ShowDraftService {
 
     }
 
-    //공연장 변경 처리, 모든 회차 좌석 복제
-    private void updateLocationAndCloneSeats(Shows draft, Long locationId) {
+    //공연장 변경 처리
+    private void updateLocation(Shows draft, Long locationId) {
         Location location = locationRepository.findById(locationId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 공연장입니다."));
-
         draft.setLocation(location);
-
-        //기존 좌석 전체 삭제
-        showSeatRepository.deleteByShow(draft);
-
-        boolean isSeated = draft.getSaleMethod() != null && draft.getSaleMethod() != DomainEnums.SaleMethod.STANDING;
-        if (isSeated) {
-
-            //공연장의 모든 좌석 로드
-            List<Seat> seats = seatRepository.findByLocation(location);
-
-            //회차가 없으면 복제 필요없음
-            if (draft.getShowTimes().isEmpty() || seats == null || seats.isEmpty()) return;
-
-            //모든 기존 회차에 대해 좌석 복제 -> 판매가능한 좌석
-            List<ShowSeat> batch = new ArrayList<>();
-
-            for (ShowTime st : draft.getShowTimes()) {
-                for (Seat s : seats) {
-                    batch.add(ShowSeat.builder()
-                            .showTime(st)
-                            .seat(s)
-                            .isAvailable(true)
-                            .build());
-                }
-            }
-            showSeatRepository.saveAll(batch);
-        }
     }
 
-    //회차 변경 시 -> 해당 회차만 좌석 복제
+    //회차 변경
     private void updateShowTimes(Shows draft, ShowUpdateRequest request) {
-
-        showSeatRepository.deleteByShow(draft);
-        draft.getShowTimes().clear(); // 기존 회차/좌석은 orphanRemoval로 모두 삭제
-        
-        Location location = draft.getLocation();
-        List<Seat> seats = null;
-        boolean isSeated = false;
-
-        if (location != null && location.getType() == DomainEnums.LocationType.SEATED) {
-            seats = seatRepository.findByLocation(location);
-            isSeated = (seats != null && !seats.isEmpty() && draft.getSaleMethod() != DomainEnums.SaleMethod.STANDING);
-        }
-
-        List<ShowSeat> newBatch = new ArrayList<>();
+        draft.getShowTimes().clear(); // 기존 회차는 orphanRemoval로 모두 삭제
 
         List<ShowUpdateRequest.ShowTimeInfo> items = request.getShowTimes();
 
@@ -173,39 +131,19 @@ public class ShowDraftService {
         for (var dto : items) {
             LocalDateTime bookingEndAt = dto.getShowStart().minusHours(1);
 
-            // 1. 빌더 준비 (공통 정보)
             ShowTime.ShowTimeBuilder builder = ShowTime.builder()
                     .show(draft)
                     .startAt(dto.getShowStart())
                     .endAt(dto.getShowEnd())
                     .bookingEndAt(bookingEndAt);
 
-            // 2. 스탠딩(!isSeated)일 때만 총수량을 빌더에 추가
-            if (!isSeated) {
+            // 스탠딩일 때만 총수량을 빌더에 추가
+            if (draft.getSaleMethod() == DomainEnums.SaleMethod.STANDING) {
                 builder.totalStandingQuantity(request.getSeatCount());
             }
 
-            // 3. ShowTime 객체를 먼저 *완성*시킴
             ShowTime st = builder.build();
             draft.getShowTimes().add(st);
-
-            // 4. 좌석제(isSeated)일 때, 완성된 'st'를 사용해 newBatch에 좌석 추가
-            if (isSeated) {
-                if (seats != null) {
-                    for (Seat s : seats) {
-                        newBatch.add(ShowSeat.builder()
-                                .showTime(st)
-                                .seat(s)
-                                .isAvailable(true)
-                                .build());
-                    }
-                }
-            }
-        } // <-- for 루프 종료
-
-        // 5. 루프가 다 끝난 후 모아둔 좌석을 한 번에 저장
-        if (!newBatch.isEmpty()) {
-            showSeatRepository.saveAll(newBatch);
         }
     }
 
@@ -263,22 +201,47 @@ public class ShowDraftService {
 
         vaildateShowForPublishing(draft);
 
+        // --- 좌석 복제 로직 ---
+        if (draft.getSaleMethod() != DomainEnums.SaleMethod.STANDING) {
+            cloneSeatsForAllShowTimes(draft);
+        }
+        
         draft.setStatus(DomainEnums.ShowStatus.PUBLISHED);
         return new ShowUpdateResponse(draft.getId(), draft.getStatus().name());
+    }
+
+    private void cloneSeatsForAllShowTimes(Shows draft) {
+        Long locationId = draft.getLocation().getId();
+        List<ShowSeat> seatTemplates = showSeatRepository.findBySeat_Location_IdAndShowTimeIsNull(locationId);
+        
+        if (seatTemplates.isEmpty()) {
+            throw new IllegalStateException("좌석제 공연의 좌석 정보가 존재하지 않습니다. 좌석을 먼저 설정해주세요.");
+        }
+
+        List<ShowTime> showTimes = draft.getShowTimes();
+        List<ShowSeat> newShowSeats = new ArrayList<>();
+
+        for (ShowTime showTime : showTimes) {
+            for (ShowSeat template : seatTemplates) {
+                newShowSeats.add(ShowSeat.builder()
+                        .showTime(showTime)
+                        .seat(template.getSeat())
+                        .isAvailable(true)
+                        .isGoodSeat(template.getIsGoodSeat())
+                        .build());
+            }
+        }
+
+        showSeatRepository.saveAll(newShowSeats);
+        showSeatRepository.deleteBySeat_Location_IdAndShowTimeIsNull(locationId);
     }
 
     private void vaildateShowForPublishing(Shows draft) {
         if (draft.getTitle() == null || draft.getTitle().isBlank())
             throw new IllegalStateException("공연 제목을 입력해야 합니다.");
 
-//        if (draft.getPosterUrl() == null || draft.getPosterUrl().isBlank())
-//            throw new IllegalStateException("포스터를 등록해야 합니다.");
-
         if (draft.getBookingStartAt() == null)
             throw new IllegalStateException("예매 시작일을 입력해야 합니다.");
-//
-//        if (draft.getBankName() == null || draft.getBankAccountNumber() == null)
-//            throw new IllegalStateException("정산 계좌 정보를 모두 입력해야 합니다.");
 
         if (draft.getLocation() == null)
             throw new IllegalStateException("공연장을 선택해야 합니다.");
@@ -287,27 +250,22 @@ public class ShowDraftService {
         if (showTimes == null || showTimes.isEmpty())
             throw new IllegalStateException("공연 회차를 1개 이상 등록해야 합니다.");
 
-        // 좌석 vs 스탠딩
-
-        if (draft.getLocation().getType() == DomainEnums.LocationType.SEATED) {
-            // 좌석 공연이라면 showSeat가 존재해야 한다.
-            if (!showSeatRepository.existsByShowTime_Show(draft)) {
+        // 좌석 판매 방식에 따른 유효성 검사
+        if (draft.getSaleMethod() != DomainEnums.SaleMethod.STANDING) {
+            // 좌석제 공연이라면 임시 ShowSeat(템플릿)가 존재해야 한다.
+            if (!showSeatRepository.existsBySeat_Location_IdAndShowTimeIsNull(draft.getLocation().getId())) {
                 throw new IllegalStateException("좌석제 공연이지만 좌석 정보가 생성되지 않았습니다.");
             }
         } else {
             // 스탠딩 수량 검증
-            Long standingTotal = showTimes.stream()
-                    .mapToLong(st -> st.getTotalStandingQuantity() == null ? 0 : st.getTotalStandingQuantity())
-                    .sum();
-            if (standingTotal <= 0)
-                throw new IllegalStateException("스탠딩 공연의 스탠딩 수량을 입력해야 합니다.");
+            if (draft.getSeatCount() == null || draft.getSeatCount() <= 0) {
+                throw new IllegalStateException("스탠딩 공연의 총 수량을 입력해야 합니다.");
+            }
         }
 
-        // --- 티켓 옵션 ---
         if (draft.getTicketOptions() == null || draft.getTicketOptions().isEmpty())
             throw new IllegalStateException("티켓 옵션을 1개 이상 등록해야 합니다.");
 
-        // --- 메시지 ---
         Message msg = messageRepository.findByShow(draft)
                 .orElseThrow(() -> new IllegalStateException("메시지 정보를 입력해야 합니다."));
 

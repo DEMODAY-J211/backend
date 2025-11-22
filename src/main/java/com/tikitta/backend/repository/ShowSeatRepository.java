@@ -27,4 +27,11 @@ public interface ShowSeatRepository extends JpaRepository<ShowSeat,Long> {
 
     @Query("SELECT ss FROM ShowSeat ss JOIN ss.seat s WHERE s.location.id = :locationId AND ss.showTime IS NULL")
     List<ShowSeat> findDraftShowSeatsByLocationId(@Param("locationId") Long locationId);
+
+    boolean existsBySeat_Location_IdAndShowTimeIsNull(Long locationId);
+
+    List<ShowSeat> findBySeat_Location_IdAndShowTimeIsNull(Long locationId);
+
+    @Modifying
+    void deleteBySeat_Location_IdAndShowTimeIsNull(Long locationId);
 }
