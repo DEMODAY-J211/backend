@@ -24,7 +24,6 @@ public class UserController {
 
         ShowListResponse data;
         if (isLoggedIn) {
-            // 로그인한 사용자 이메일 가져오기
             String userEmail = authentication.getName();
             data = userService.getUserMainPageWithReservationStatus(managerId, userEmail);
         } else {
