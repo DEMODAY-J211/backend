@@ -10,8 +10,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+
 import com.tikitta.backend.util.AuthUtil;
+import com.tikitta.backend.util.SmsUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +26,7 @@ import java.util.Comparator;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -36,6 +41,7 @@ public class ShowService {
     private final ShowSeatRepository showSeatRepository;
     private final MessageRepository messageRepository;
     private final LocationMapRepository locationMapRepository;
+    private final SmsUtil smsUtil;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
 
@@ -156,13 +162,19 @@ public class ShowService {
                     throw new AccessDeniedException("Reservation does not belong to the specified show.");
                 }
 
+                DomainEnums.ReservationStatus originalStatus = reservation.getStatus();
                 DomainEnums.ReservationStatus newStatus = convertStatus(info.getStatus());
 
-                // Update Reservation status
-                reservationRepository.updateStatus(reservation.getId(), newStatus);
+                // 상태가 실제로 변경될 때만 업데이트 수행
+                if (originalStatus != newStatus) {
+                    reservation.setStatus(newStatus);
+                    reservationItemRepository.updateStatusByReservationId(reservation.getId(), newStatus);
 
-                // Update ReservationItem status
-                reservationItemRepository.updateStatusByReservationId(reservation.getId(), newStatus);
+                    // 입금확정 상태로 변경 시, 예매 확정 메시지 발송
+                    if (originalStatus == DomainEnums.ReservationStatus.PENDING_PAYMENT && newStatus == DomainEnums.ReservationStatus.CONFIRMED) {
+                        sendBookingConfirmationMessage(reservation);
+                    }
+                }
 
                 if (newStatus == DomainEnums.ReservationStatus.CANCELED) {
                     // Restore ShowTime seat count
@@ -185,6 +197,29 @@ public class ShowService {
 
         return new ReservationStatusUpdateResponse(updatedCount, failedIds);
     }
+
+    private void sendBookingConfirmationMessage(Reservation reservation) {
+        try {
+            Optional<Message> messageOpt = messageRepository.findByShow(reservation.getShowTime().getShow());
+            if (messageOpt.isPresent()) {
+                String template = messageOpt.get().getBookingConfirmation();
+                if (StringUtils.hasText(template)) {
+                    String finalMessage = SmsUtil.formatMessage(template, reservation);
+                    //String subject = String.format("[%s] 예매가 확정되었습니다.", reservation.getShowTime().getShow().getTitle());
+                    String subject = "[티킷타] 입금 확정안내";
+                    smsUtil.sendLms(reservation.getPhone(), subject, finalMessage);
+                    log.info("예매 확정 메시지 발송 완료: Reservation ID {}", reservation.getId());
+                } else {
+                    log.warn("예매 확정 메시지 템플릿이 비어있습니다. Reservation ID: {}", reservation.getId());
+                }
+            } else {
+                log.warn("메시지 템플릿이 존재하지 않아 예매 확정 메시지를 발송할 수 없습니다. Show ID: {}", reservation.getShowTime().getShow().getId());
+            }
+        } catch (Exception e) {
+            log.error("예매 확정 메시지 발송 중 오류 발생. Reservation ID: {}", reservation.getId(), e);
+        }
+    }
+
 
     private DomainEnums.ReservationStatus convertStatus(String status) {
         switch (status) {

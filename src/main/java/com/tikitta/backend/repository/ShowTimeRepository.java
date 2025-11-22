@@ -11,6 +11,7 @@ import java.util.List;
 
 public interface ShowTimeRepository extends JpaRepository<ShowTime, Long> {
     List<ShowTime> findAllByStartAtBetween(LocalDateTime from, LocalDateTime to);
+    List<ShowTime> findAllByEndAtBetween(LocalDateTime from, LocalDateTime to);
 
     @Modifying
     @Query("UPDATE ShowTime st SET st.remainSeatCount = st.remainSeatCount + :quantity WHERE st.id = :id")
