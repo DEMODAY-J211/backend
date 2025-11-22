@@ -79,8 +79,8 @@ public class HaechandeulDataInitializer implements CommandLineRunner {
         Location location;
         List<Seat> seats = new ArrayList<>();
 
-        if ("haechandeul@naver.com".equals(managerEmail)) {
-            location = locationRepository.findById(18L)
+            if ("haechandeul@naver.com".equals(managerEmail)) {
+                location = locationRepository.findById(8L)
                 .orElseThrow(() -> new RuntimeException("Location with ID 18 not found"));
         } else {
             location = Location.builder()

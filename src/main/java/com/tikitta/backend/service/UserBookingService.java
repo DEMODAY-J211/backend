@@ -33,6 +33,7 @@ public class UserBookingService {
     private final ShowTimeRepository showTimeRepository;
     private final TicketOptionRepository ticketOptionRepository;
     private final ReservationItemRepository reservationItemRepository;
+    private final QrCodeService qrCodeService;
 
     public BookingInfoResponse getBookingInfo(Long showId) {
         Shows show = showsRepository.findById(showId)
@@ -122,7 +123,7 @@ public class UserBookingService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 티켓 옵션입니다. ID: " + sessionDto.getTicketOptionId()));
 */
 
-
+        // 확인
         log.info(">>> [createReservation] sessionDto = {}", sessionDto);
         log.info(">>> [createReservation] authentication = {}", authentication);
 
@@ -203,8 +204,15 @@ public class UserBookingService {
                         .build());
             }
 
+        } else if (saleMethod == DomainEnums.SaleMethod.SCHEDULING) {
+            // ========== 스케줄링 ==========
+            items.add(ReservationItem.builder()
+                    .reservation(reservation)
+                    .status(DomainEnums.ReservationStatus.PENDING_PAYMENT)
+                    .build());
+
         } else {
-            // ========== 스탠딩 ==========
+            // ========== 스탠딩, 주최자 지정 ==========
             Integer maxEntry = reservationItemRepository.findMaxEntryNumberByShowTime(showTime);
             int nextEntry = (maxEntry != null) ? maxEntry + 1 : 1;
 
@@ -217,6 +225,27 @@ public class UserBookingService {
             }
         }
 
+        reservationItemRepository.saveAll(items);
+
+
+        // 각 ReservationItem에 대해 QR 코드 생성 및 URL 세팅
+        for (ReservationItem item : items) {
+            if (item.getId() == null) {
+                log.warn("ReservationItem ID가 null입니다. QR 코드를 생성할 수 없습니다.");
+                continue;
+            }
+
+            try {
+                String qrContent = String.valueOf(item.getId());
+                String qrUrl = qrCodeService.createAndUploadQrCode(qrContent);
+                item.setQrCodeUrl(qrUrl);
+            } catch (Exception e) {
+                log.error("ReservationItem ID [{}]에 대한 QR 코드 생성 실패", item.getId(), e);
+                throw new RuntimeException("QR 코드 생성에 실패했습니다.", e);
+            }
+        }
+
+        // QR 코드 URL이 세팅된 상태를 다시 저장
         reservationItemRepository.saveAll(items);
 
         return reservation;
@@ -247,7 +276,7 @@ public class UserBookingService {
     public ReservationDetailResponse getReservationDetail(Long reservationId, Authentication authentication) {
 
         // 1. 예매 정보 조회 (Fetch Join으로 연관 엔티티 함께 로드)
-        Reservation reservation = reservationRepository.findByIdWithDetails(reservationId) // ◀ Repository에 새 메소드 필요
+        Reservation reservation = reservationRepository.findByIdWithDetails(reservationId) 
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 예매입니다. ID: " + reservationId));
 
         // 2. 접근 권한 확인 (로그인한 사용자의 예매인지)
@@ -267,7 +296,7 @@ public class UserBookingService {
     public void cancelReservation(Long reservationId, Authentication authentication) {
 
         // 1. 예매 정보 조회
-        Reservation reservation = reservationRepository.findById(reservationId) // Fetch Join 불필요
+        Reservation reservation = reservationRepository.findById(reservationId) 
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "존재하지 않는 예매입니다. ID: " + reservationId));
 
         // 2. 접근 권한 확인 (로그인한 사용자의 예매인지)
