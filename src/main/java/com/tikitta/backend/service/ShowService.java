@@ -29,7 +29,6 @@ public class ShowService {
 
     private final AuthUtil authUtil;
     private final ManagerRepository managerRepository;
-    private final KakaoOauthRepository kakaoOauthRepository;
     private final ShowsRepository showsRepository;
     private final ReservationRepository reservationRepository;
     private final ReservationItemRepository reservationItemRepository;
