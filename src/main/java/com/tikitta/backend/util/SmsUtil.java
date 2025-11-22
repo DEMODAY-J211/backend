@@ -1,13 +1,19 @@
 package com.tikitta.backend.util;
 
 import com.google.gson.Gson;
+import com.tikitta.backend.domain.Reservation;
+import com.tikitta.backend.domain.Shows;
+import com.tikitta.backend.domain.ShowTime;
+import com.tikitta.backend.domain.KakaoOauth;
 import okhttp3.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.text.DecimalFormat;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,6 +40,43 @@ public class SmsUtil {
 
     private final OkHttpClient client = new OkHttpClient();
     private final Gson gson = new Gson();
+
+    /**
+     * 메시지 템플릿의 변수를 실제 데이터로 치환하는 정적 유틸리티 메소드
+     *
+     * @param template    치환할 변수가 포함된 메시지 템플릿 (예: "{공연명} 예매가 완료되었습니다.")
+     * @param reservation 예매 정보를 담고 있는 Reservation 객체
+     * @return 변수가 모두 실제 값으로 치환된 최종 메시지 문자열
+     */
+    public static String formatMessage(String template, Reservation reservation) {
+        if (template == null || reservation == null) {
+            return "";
+        }
+
+        ShowTime showTime = reservation.getShowTime();
+        Shows show = showTime.getShow();
+        KakaoOauth user = reservation.getUser();
+
+        // 금액 포맷터
+        DecimalFormat decimalFormat = new DecimalFormat("#,###원");
+        String formattedPrice = decimalFormat.format(reservation.getTotalPrice());
+
+        // 날짜/시간 포맷터
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd (E) HH:mm");
+        String formattedShowTime = showTime.getStartAt().format(formatter);
+
+        return template
+                .replace("{단체명}", show.getManager().getName())
+                .replace("{공연명}", show.getTitle())
+                .replace("{'0,000 원'}", formattedPrice)
+                .replace("{예금주명}", show.getBankDepositorName() + " " + show.getBankName().name())
+                .replace("{계좌번호}", show.getBankAccountNumber())
+                .replace("{예매_매수}", String.valueOf(reservation.getQuantity()))
+                .replace("{'000 님'}", user.getName())
+                .replace("{공연일시}", formattedShowTime)
+                .replace("{관람장소}", show.getLocation().getAddress());
+    }
+
 
     /**
      * SMS(단문)를 발송하는 메소드
