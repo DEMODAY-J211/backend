@@ -3,7 +3,10 @@ package com.tikitta.backend.service;
 import com.tikitta.backend.domain.*;
 import com.tikitta.backend.dto.userbooking.*;
 import com.tikitta.backend.repository.*;
+import com.tikitta.backend.util.SmsUtil;
 import lombok.extern.slf4j.Slf4j;
+
+import java.io.IOException;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
@@ -34,6 +37,8 @@ public class UserBookingService {
     private final TicketOptionRepository ticketOptionRepository;
     private final ReservationItemRepository reservationItemRepository;
     private final QrCodeService qrCodeService;
+    private final MessageRepository messageRepository;
+    private final SmsUtil smsUtil;
 
     public BookingInfoResponse getBookingInfo(Long showId) {
         Shows show = showsRepository.findById(showId)
@@ -222,6 +227,7 @@ public class UserBookingService {
         reservationItemRepository.saveAll(items);
 
 
+        // QR-code 생성
         for (ReservationItem item : items) {
             if (item.getId() == null) {
                 log.warn("ReservationItem ID가 null입니다. QR 코드를 생성할 수 없습니다.");
@@ -454,5 +460,40 @@ public class UserBookingService {
         }
 
         log.info("좌석 변경 완료: reservationId={}, newSeatIds={}", reservationId, newShowSeatIds);
+    }
+
+    @Transactional
+    public void sendPaymentGuide(Long reservationId, Authentication authentication) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "존재하지 않는 예매입니다. ID: " + reservationId
+                ));
+
+        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+        Map<String, Object> kakaoAccount = (Map<String, Object>) oAuth2User.getAttributes().get("kakao_account");
+        String email = (String) kakaoAccount.get("email");
+
+        if (!reservation.getUser().getEmail().equals(email)) {
+            throw new AccessDeniedException("자신의 예매에 대해서만 입금 안내를 받을 수 있습니다.");
+        }
+        Shows show = reservation.getShowTime().getShow();
+        Message message = messageRepository.findByShow(show).orElse(null);
+
+        if (message == null) return;
+
+        String paymentGuide = message.getPaymentGuide();
+
+        if (paymentGuide != null && !paymentGuide.isBlank()) {
+            try {
+                smsUtil.sendLms(
+                        reservation.getUserPhone(),
+                        "[티킷타] 입금 안내",
+                        paymentGuide
+                );
+            } catch (IOException e) {
+                log.error("입금 안내 LMS 발송 실패. reservationId={}", reservation.getId(), e);
+            }
+        }
     }
 }
