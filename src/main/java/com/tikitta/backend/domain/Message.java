@@ -20,22 +20,22 @@ public class Message {
     private Shows show;
 
     @Column(name = "message_pay_guide")
-    private String paymentGuide;
+    private String paymentGuide; //입금안내
 
     @Column(name = "message_book_confirm")
-    private String bookingConfirmation;
+    private String bookingConfirmation; //예매확정
 
     @Column(name = "message_book_custom", nullable = false)
-    private String bookingCustom;
+    private String bookingCustom; //예매확정-필수문장
 
     @Column(name = "message_show_guide")
-    private String showGuide;
+    private String showGuide; //공연안내
 
     @Column(name = "message_show_qr", nullable = false)
-    private String qrGuide;
+    private String qrGuide; //공연안내-큐알
 
     @Column(name = "message_review_request")
-    private String reviewRequest;
+    private String reviewRequest; //공연후기
 
     @Builder
     public Message(Shows show, String paymentGuide, String bookingConfirmation, String bookingCustom, String showGuide, String qrGuide, String reviewRequest) {

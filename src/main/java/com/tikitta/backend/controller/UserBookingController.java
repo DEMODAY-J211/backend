@@ -32,7 +32,6 @@ public class UserBookingController {
 
     @GetMapping("/{showId}/reserveInfo") // ◀ 2. 엔드포인트 추가
     public ResponseEntity<ApiResponse<BookingInfoResponse>> getReserveInfo(
-            @PathVariable Long managerId,
             @PathVariable Long showId) {
 
         // 3. Service 호출 및 ApiResponse로 감싸서 반환
@@ -41,7 +40,6 @@ public class UserBookingController {
     }
 
     // --- 👇 [페이지 1] 예매 시작 (회차/티켓 선택) ---
-    // URL: POST /user/booking/start
     @PostMapping("/start")
     public ResponseEntity<ApiResponse<String>> startBooking(
             @RequestBody BookingDto.StartRequest requestDto,
@@ -69,7 +67,6 @@ public class UserBookingController {
     }
 
     // --- 👇 [페이지 3] 예매자 정보 입력 ---
-    // URL: POST /user/booking/details
     @PostMapping("/details")
     public ResponseEntity<ApiResponse<String>> saveBookingDetails(
             @RequestBody BookingDto.DetailsRequest requestDto,
@@ -95,7 +92,6 @@ public class UserBookingController {
     }
 
     // --- 👇 [페이지 4] 최종 확인 정보 조회 ---
-    // URL: GET /user/booking/confirm-info
     @GetMapping("/confirm-info")
     public ResponseEntity<ApiResponse<BookingDto.ConfirmResponse>> getConfirmInfo(
             HttpSession session, Authentication authentication) {
@@ -124,7 +120,6 @@ public class UserBookingController {
     }
 
     // --- 👇 [페이지 4] 최종 예매 확정 ---
-    // URL: POST /user/booking/confirm
     @PostMapping("/confirm")
     public ResponseEntity<ApiResponse<Long>> confirmBooking(
             HttpSession session, Authentication authentication) {
