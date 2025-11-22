@@ -70,6 +70,10 @@ public class Reservation {
         this.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
     }
 
+    public String getUserPhone()
+    {
+        return this.phone;
+    }
     public boolean requestCancellation() {
         // 취소 불가능한 상태인지 확인
         if (this.status == DomainEnums.ReservationStatus.CANCELED ||

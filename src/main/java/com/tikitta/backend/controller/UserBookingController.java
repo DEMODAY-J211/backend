@@ -115,6 +115,8 @@ public class UserBookingController {
         ReservationDetailResponse data = userBookingService.getReservationDetail(reservationId, authentication);
 
         return ResponseEntity.ok(new ApiResponse<>(data));
+
+
     }
 
     @PostMapping("/confirm")
@@ -128,8 +130,9 @@ public class UserBookingController {
         }
 
         Long reservationId = userBookingService.createReservation(sessionDto, authentication).getId();
-
         session.removeAttribute("currentBooking");
+
+        userBookingService.sendPaymentGuide(reservationId, authentication);
 
         return ResponseEntity.ok(new ApiResponse<>(reservationId));
     }
