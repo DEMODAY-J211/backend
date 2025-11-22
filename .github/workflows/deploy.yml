@@ -38,6 +38,9 @@ jobs:
             JAR_NAME="backend-0.0.1-SNAPSHOT.jar"
             REGION="ap-northeast-2" # AWS Region
 
+            echo "== 1. 서버 타임존 설정 (Asia/Seoul) =="
+            sudo timedatectl set-timezone Asia/Seoul
+         
             echo "== 1. 프로젝트 디렉토리로 이동 =="
             cd ${PROJECT_DIR} || exit 1
             
@@ -63,6 +66,7 @@ jobs:
             echo "== 6. 새 JAR 실행 (AWS 자격 증명 주입) =="
             # Java 실행 명령어를 한 줄 또는 백슬래시 뒤에 주석 없이 작성하여 명령어가 이어지도록 수정합니다.
             nohup java \
+              -Duser.timezone=Asia/Seoul \
               -Dgabia.sms.api-key='${{ secrets.GABIA_API_KEY }}' \
               -Dcloud.aws.credentials.accessKey='${{ secrets.AWS_ACCESS_KEY }}' \
               -Dcloud.aws.credentials.secretKey='${{ secrets.AWS_SECRET_KEY }}' \
