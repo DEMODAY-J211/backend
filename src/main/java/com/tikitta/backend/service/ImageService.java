@@ -80,4 +80,25 @@ public class ImageService {
             throw new CustomApplicationException(ErrorCode.IO_EXCEPTION_UPLOAD_FILE);
         }
     }
+
+    public void delete(String imageUrl) {
+        try {
+            String key = extractKeyFromUrl(imageUrl);
+            amazonS3.deleteObject(bucketName, key);
+        } catch (Exception e) {
+            throw new CustomApplicationException(ErrorCode.IO_EXCEPTION_DELETE_FILE);
+        }
+    }
+
+    public void delete(List<String> imageUrls) {
+        imageUrls.forEach(this::delete);
+    }
+
+    private String extractKeyFromUrl(String url) {
+        int index = url.lastIndexOf("/");
+        if (index == -1 || index + 1 >= url.length()) {
+            throw new CustomApplicationException(ErrorCode.INVALID_FILE_PATH);
+        }
+        return url.substring(index + 1);
+    }
 }
