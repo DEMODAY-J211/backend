@@ -205,10 +205,12 @@ public class UserBookingService {
 
         } else if (saleMethod == DomainEnums.SaleMethod.SCHEDULING) {
             // ========== 스케줄링 ==========
-            items.add(ReservationItem.builder()
+            for (int i = 0; i < sessionDto.getQuantity(); i++) {
+                items.add(ReservationItem.builder()
                     .reservation(reservation)
                     .status(DomainEnums.ReservationStatus.PENDING_PAYMENT)
                     .build());
+            }
 
         } else {
             // ========== 스탠딩, 주최자 지정 ==========
