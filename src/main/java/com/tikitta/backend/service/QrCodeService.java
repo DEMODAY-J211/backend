@@ -39,7 +39,7 @@ public class QrCodeService {
             byte[] bytes = baos.toByteArray();
 
             // 3. 파일 이름
-            String fileName = "QR_" + content + ".png";
+            String fileName = "qrcodes/QR_" + content + ".png";
 
             // 4. ImageService 재사용해서 S3 업로드
             return imageService.upload(fileName, bytes, "image/png");
