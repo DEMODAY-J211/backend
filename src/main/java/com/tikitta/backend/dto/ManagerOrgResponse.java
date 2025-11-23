@@ -14,15 +14,9 @@ public class ManagerOrgResponse {
     private String managerPicture;
     private String managerIntro;
     private String managerText;
-    private ManagerUrl managerUrl;
+    private List<String> managerUrl;
 
-    @Getter
-    @NoArgsConstructor
-    public static class ManagerUrl {
-        private String instagram;
-        private String youtube;
-        private String facebook;
-    }
+
     public ManagerOrgResponse(Manager manager) {
         this.managerId = manager.getId();
         this.managerName = manager.getName();
