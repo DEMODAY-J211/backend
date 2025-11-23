@@ -14,13 +14,15 @@ public class CorsConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(
-                //"http://localhost:5173",
+        
+        // setAllowedOrigins 대신 setAllowedOriginPatterns 사용
+        configuration.setAllowedOriginPatterns(Arrays.asList(
                 "https://localhost:5173",
-                "https://back-tikitta.duckdns.org",
-                "https://tikitta-q2ntmdwpe-hyunneees-projects.vercel.app",
-                "https://tikitta.vercel.app/"
+                "http://localhost:5173",
+                "https://*.duckdns.org",
+                "https://*.vercel.app"
         ));
+        
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
