@@ -45,7 +45,7 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
             Map<String, Object> attributes = oAuth2User.getAttributes();
 
             boolean isSignup = (boolean) attributes.getOrDefault("isSignup", false);
-            String role = (String) attributes.getOrDefault("userRole", "USER");
+            String role = (String) attributes.getOrDefault("userRole", "NO");
 
             if (isSignup) {
                 targetUrl = frontendBaseUrl + "/landing";
