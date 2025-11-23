@@ -95,6 +95,27 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
         return null;
     }
 
+    private String buildUrl(String base, String path) {
+        if (base == null) {
+            base = "";
+        }
+        // base 뒤에 오는 / 제거
+        if (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+
+        if (path == null || path.isEmpty()) {
+            return base;
+        }
+
+        // path 앞에 / 보장
+        if (!path.startsWith("/")) {
+            path = "/" + path;
+        }
+
+        return base + path;
+    }
+
     private String determineFrontendBaseUrl(HttpServletRequest request, HttpSession session) {
         // 1. 세션에 저장된 Origin이 있는지 먼저 확인
         if (session != null) {
@@ -105,6 +126,7 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
             }
         }
 
+
         // 2. 세션에 없다면 (예: 직접 /login/oauth2/code/kakao로 접근), 기존의 폴백 로직 사용
         CorsConfiguration corsConfiguration = corsConfigurationSource.getCorsConfiguration(request);
         List<String> allowedOrigins = corsConfiguration.getAllowedOrigins();
@@ -114,22 +136,5 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
         return defaultOrigin;
     }
 
-    private String buildUrl(String base, String path) {
-        if (base == null || base.isEmpty()) {
-            base = "";
-        }
-        // base 끝 슬래시 제거
-        if (base.endsWith("/")) {
-            base = base.substring(0, base.length() - 1);
-        }
-        if (path == null || path.isEmpty()) {
-            return base;
-        }
 
-        // path 앞에 슬래시 없으면 붙여주기
-        if (!path.startsWith("/")) {
-            path = "/" + path;
-        }
-        return base + path;
-    }
 }
