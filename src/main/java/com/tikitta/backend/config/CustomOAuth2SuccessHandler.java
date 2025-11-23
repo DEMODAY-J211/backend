@@ -105,7 +105,7 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
             }
         }
 
-// 2. 세션에 없다면 (예: 직접 /login/oauth2/code/kakao로 접근), 기존의 폴백 로직 사용
+        // 2. 세션에 없다면 (예: 직접 /login/oauth2/code/kakao로 접근), 기존의 폴백 로직 사용
         CorsConfiguration corsConfiguration = corsConfigurationSource.getCorsConfiguration(request);
         List<String> allowedOrigins = corsConfiguration.getAllowedOrigins();
         String defaultOrigin = (allowedOrigins != null && !allowedOrigins.isEmpty()) ? allowedOrigins.get(0) : "/";
