@@ -73,6 +73,7 @@ public class AuthController {
         Map<String, Object> attributes = Map.of(
                 "email", user.getEmail(),
                 "name", user.getName()
+
         );
         String nameAttributeKey = "email";
 
