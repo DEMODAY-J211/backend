@@ -13,12 +13,5 @@ public class ManagerUpdateRequest {
     private String managerName;
     private String managerIntro;
     private String managerText;
-    private ManagerUrl managerUrl;
-
-    @Getter
-    @NoArgsConstructor
-    public static class ManagerUrl {
-        private String instagram;
-        private String youtube;
-        private String facebook;
-    }}
+    private List<String> managerUrl;
+}
