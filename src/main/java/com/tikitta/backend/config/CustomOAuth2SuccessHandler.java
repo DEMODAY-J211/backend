@@ -23,8 +23,6 @@ import java.util.Map;
 public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final CorsConfigurationSource corsConfigurationSource;
-    @Value("${frontend-url}")
-    private String frontendBaseUrlConfig;
 
 
     @Override
@@ -42,11 +40,7 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
 
         if (savedRedirectUri != null) {
             if (savedRedirectUri.startsWith("/")) {
-                String base = frontendBaseUrl;
-                if (base.endsWith("/")) {
-                    base = base.substring(0, base.length() - 1);
-                }
-                targetUrl = base + savedRedirectUri;
+                targetUrl = frontendBaseUrl + savedRedirectUri;
             } else {
                 targetUrl = savedRedirectUri;
             }
@@ -111,14 +105,9 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
             }
         }
 
-        // 2. 세션에 없다면, 설정된 frontend-url을 우선 사용
-        if (frontendBaseUrlConfig != null && !frontendBaseUrlConfig.isBlank()) {
-            System.out.println("### [Origin Check] 세션에 Origin 없음. 설정된 기본 URL 사용: " + frontendBaseUrlConfig + " ###");
-            return frontendBaseUrlConfig;
-        }
+// 2. 세션에 없다면 (예: 직접 /login/oauth2/code/kakao로 접근), 기존의 폴백 로직 사용
         CorsConfiguration corsConfiguration = corsConfigurationSource.getCorsConfiguration(request);
-        // 3. 그래도 없으면 CORS 설정 기반 폴백        CorsConfiguration corsConfiguration = corsConfigurationSource.getCorsConfiguration(request);
-        List<String> allowedOrigins = (corsConfiguration != null) ? corsConfiguration.getAllowedOrigins() : null;
+        List<String> allowedOrigins = corsConfiguration.getAllowedOrigins();
         String defaultOrigin = (allowedOrigins != null && !allowedOrigins.isEmpty()) ? allowedOrigins.get(0) : "/";
 
         System.out.println("### [Origin Check] 세션에 Origin 없음. 기본 URL 사용: " + defaultOrigin + " ###");
