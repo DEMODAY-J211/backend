@@ -28,6 +28,7 @@ public class ManagerService {
     private final ManagerRepository managerRepository;
     private final LocationRepository locationRepository;
     private final AuthUtil authUtil;
+    private final ImageService imageService;
 
     public List<LocationLikeResponse> getLikedLocations() {
         KakaoOauth currentUser = authUtil.getCurrentUser();
@@ -87,6 +88,16 @@ public class ManagerService {
 
         // PATCH: null이 아닌 필드만 업데이트
         if (request.getManagerPicture() != null) {
+            String oldUrl = manager.getPictureUrl();
+            if (oldUrl != null && !oldUrl.isBlank()) {
+                // 기존 S3 이미지 삭제
+                imageService.delete(oldUrl);
+            }
+            // 새 URL 저장
+            manager.setPictureUrl(request.getManagerPicture());
+        }
+
+        if (request.getManagerPicture() != null) {
             manager.setPictureUrl(request.getManagerPicture());
         }
         if (request.getManagerName() != null) {
@@ -97,10 +108,6 @@ public class ManagerService {
         }
         if (request.getManagerText() != null) {
             manager.setDescription(request.getManagerText());
-        }
-        if (request.getManagerUrl() != null) {
-            manager.getUrls().clear();
-            manager.getUrls().addAll(request.getManagerUrl());
         }
 
         managerRepository.save(manager);
