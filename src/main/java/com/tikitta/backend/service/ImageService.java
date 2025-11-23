@@ -138,12 +138,19 @@ public class ImageService {
         }
     }
 
-    // 큐알코드 저장용 (바이트 배열)
-    public String upload(String originalFilename, byte[] bytes, String contentType) {
+    public String uploadShowQrCode(Long showId, String originalFilename, byte[] bytes, String contentType) {
         validateFile(originalFilename);
 
         try {
+            // 로그인한 매니저 조회
+            Manager manager = getCurrentManager();
+            Long managerId = manager.getId();
+
             String saveName = UUID.randomUUID() + "_" + originalFilename;
+
+            // S3 저장 경로
+            String key = String.format("manager/%d/shows/%d/qrcode/%s",
+                    managerId, showId, saveName);
 
             ObjectMetadata metadata = new ObjectMetadata();
             metadata.setContentLength(bytes.length);
@@ -151,11 +158,15 @@ public class ImageService {
 
             ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
 
-            amazonS3.putObject(bucketName, saveName, inputStream, metadata);
+            amazonS3.putObject(bucketName, key, inputStream, metadata);
+            amazonS3.setObjectAcl(bucketName, key, CannedAccessControlList.PublicRead);
 
-            return amazonS3.getUrl(bucketName, saveName).toString();
+            return amazonS3.getUrl(bucketName, key).toString();
+
         } catch (Exception e) {
+            log.error("QR 코드 업로드 실패: {}", e.getMessage());
             throw new CustomApplicationException(ErrorCode.IO_EXCEPTION_UPLOAD_FILE);
         }
     }
+
 }

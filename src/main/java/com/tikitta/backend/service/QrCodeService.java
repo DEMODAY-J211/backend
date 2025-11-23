@@ -26,7 +26,7 @@ public class QrCodeService {
      * @return 생성된 QR코드 이미지의 상대 URL (예: /qrcodes/123.png)
      * @throws Exception QR코드 생성 및 저장 실패 시
      */
-    public String createAndUploadQrCode(String content) throws Exception {
+    public String createAndUploadQrCode(Long showId, String content) throws Exception {
 
 
             // 1. QR BitMatrix 생성
@@ -42,6 +42,6 @@ public class QrCodeService {
             String fileName = "qrcodes/QR_" + content + ".png";
 
             // 4. ImageService 재사용해서 S3 업로드
-            return imageService.upload(fileName, bytes, "image/png");
+            return imageService.uploadShowQrCode(showId, fileName, bytes, "image/png");
     }
 }
