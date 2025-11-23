@@ -44,7 +44,7 @@ public class SecurityConfig {
                                 "/shows/**/images"  // 파일 업로드 경로 허용
                         ).permitAll()
                         .requestMatchers("/manager/**").hasRole("MANAGER")
-                        .requestMatchers("/user/*/myshow", "/user/*/booking/**", "/user/*/ticket/**").hasRole("USER")
+                        .requestMatchers("/user/{managerId}/myshow", "/user/{managerId}/booking/**", "/user/{managerId}/ticket/**").hasRole("USER")
                         .anyRequest().authenticated()
                 )
                 .logout(logout -> logout
