@@ -40,7 +40,7 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
 
         if (savedRedirectUri != null) {
             if (savedRedirectUri.startsWith("/")) {
-                targetUrl = frontendBaseUrl + savedRedirectUri;
+                targetUrl = buildUrl(frontendBaseUrl, savedRedirectUri);
             } else {
                 targetUrl = savedRedirectUri;
             }
@@ -105,12 +105,27 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
             }
         }
 
-// 2. 세션에 없다면 (예: 직접 /login/oauth2/code/kakao로 접근), 기존의 폴백 로직 사용
+        // 2. 세션에 없다면 (예: 직접 /login/oauth2/code/kakao로 접근), 기존의 폴백 로직 사용
         CorsConfiguration corsConfiguration = corsConfigurationSource.getCorsConfiguration(request);
         List<String> allowedOrigins = corsConfiguration.getAllowedOrigins();
         String defaultOrigin = (allowedOrigins != null && !allowedOrigins.isEmpty()) ? allowedOrigins.get(0) : "/";
 
         System.out.println("### [Origin Check] 세션에 Origin 없음. 기본 URL 사용: " + defaultOrigin + " ###");
         return defaultOrigin;
+    }
+
+    private String buildUrl(String base, String path) {
+        if (base == null || base.isEmpty()) {
+            base = "";
+        }
+        // base 끝 슬래시 제거
+        if (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        // path 앞에 슬래시 없으면 붙여주기
+        if (!path.startsWith("/")) {
+            path = "/" + path;
+        }
+        return base + path;
     }
 }
