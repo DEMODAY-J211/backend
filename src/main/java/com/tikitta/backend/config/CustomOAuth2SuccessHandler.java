@@ -122,6 +122,10 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
         if (base.endsWith("/")) {
             base = base.substring(0, base.length() - 1);
         }
+        if (path == null || path.isEmpty()) {
+            return base;
+        }
+
         // path 앞에 슬래시 없으면 붙여주기
         if (!path.startsWith("/")) {
             path = "/" + path;
