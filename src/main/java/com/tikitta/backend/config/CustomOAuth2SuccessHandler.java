@@ -23,7 +23,8 @@ import java.util.Map;
 public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final CorsConfigurationSource corsConfigurationSource;
-
+    @Value("${frontend-url}")
+    private String frontendUrlFromConfig;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -42,7 +43,7 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
 
 
             if (isSignup) {
-                targetUrl = frontendBaseUrl + "/landing";
+                targetUrl = buildUrl(frontendBaseUrl, "landing");
             } else {
                 Collection<? extends GrantedAuthority> authorities =
                         authentication.getAuthorities();
@@ -53,11 +54,11 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
                         .anyMatch(a -> a.getAuthority().equals("ROLE_USER"));
 
                 if (isManager) {
-                    targetUrl = frontendBaseUrl + "/homemanager?login=success&role=MANAGER";
+                    targetUrl = buildUrl(frontendBaseUrl, "homemanager?login=success&role=MANAGER");
                 } else if (isUser) {
-                    targetUrl = frontendBaseUrl + "/homeuser?login=success&role=USER";
+                    targetUrl = buildUrl(frontendBaseUrl, "homeuser?login=success&role=USER");
                 } else {
-                    targetUrl = frontendBaseUrl + "/landing?login=success&role=NO";
+                    targetUrl = buildUrl(frontendBaseUrl, "landing?login=success&role=NO");
                 }
             }
 
@@ -106,25 +107,38 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
 
         return base + path;
     }
+    private String trimTrailingSlash(String url) {
+        if (url == null) return null;
+        if (url.endsWith("/")) {
+            return url.substring(0, url.length() - 1);
+        }
+        return url;
+    }
 
     private String determineFrontendBaseUrl(HttpServletRequest request, HttpSession session) {
         // 1. 세션에 저장된 Origin이 있는지 먼저 확인
         if (session != null) {
             String savedOrigin = (String) session.getAttribute(OriginSaveFilter.SAVED_ORIGIN_ATTRIBUTE);
             if (savedOrigin != null && !savedOrigin.isEmpty()) {
-                System.out.println("### [Origin Check] 세션에 저장된 Origin 사용: " + savedOrigin + " ###");
-                return savedOrigin;
+                String trimmed = trimTrailingSlash(savedOrigin);
+                System.out.println("### [Origin Check] 세션에 저장된 Origin 사용: " + trimmed + " ###");
+                return trimmed;
             }
         }
 
+        if (frontendUrlFromConfig != null && !frontendUrlFromConfig.isEmpty()) {
+            String trimmed = trimTrailingSlash(frontendUrlFromConfig);
+            System.out.println("### [Origin Check] frontend-url 사용: " + trimmed + " ###");
+            return trimmed;
+        }
 
         // 2. 세션에 없다면 (예: 직접 /login/oauth2/code/kakao로 접근), 기존의 폴백 로직 사용
         CorsConfiguration corsConfiguration = corsConfigurationSource.getCorsConfiguration(request);
         List<String> allowedOrigins = corsConfiguration.getAllowedOrigins();
-        String defaultOrigin = (allowedOrigins != null && !allowedOrigins.isEmpty()) ? allowedOrigins.get(0) : "/";
+        String defaultOrigin = (allowedOrigins != null && !allowedOrigins.isEmpty()) ? allowedOrigins.get(0) : "";
 
         System.out.println("### [Origin Check] 세션에 Origin 없음. 기본 URL 사용: " + defaultOrigin + " ###");
-        return defaultOrigin;
+        return trimTrailingSlash(defaultOrigin);
     }
 
 
