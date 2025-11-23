@@ -11,6 +11,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ public class ShowDraftService {
     private final MessageRepository messageRepository;
     private final RestClient.Builder builder;
     private final ShowTimeRepository showTimeRepository;
+    private final ImageService imageService;
 
     public ShowUpdateResponse CreateShow(){
         KakaoOauth user=authUtil.getCurrentUser();
@@ -79,8 +81,7 @@ public class ShowDraftService {
 
         /* [E] 상세 이미지 교체 */
         if (request.getDetailImages() != null) {
-            draft.getDetailImageUrls().clear();
-            draft.getDetailImageUrls().addAll(request.getDetailImages());
+           updateDetailImages(draft,request);
         }
 
         /* [F] Message 수정 */
@@ -93,7 +94,8 @@ public class ShowDraftService {
 
     private void updateBasicFields(Shows draft, ShowUpdateRequest request){
         if(request.getTitle()!= null) draft.setTitle(request.getTitle());
-        if(request.getPoster() != null) draft.setPosterUrl(request.getPoster());
+        if(request.getPoster() != null)
+            updatePoster(draft, request.getPoster());
         if(request.getBookStart() != null) draft.setBookingStartAt(request.getBookStart());
         if(request.getBankMaster() != null) draft.setBankDepositorName(request.getBankMaster());
         if (request.getBankName() != null)
@@ -344,7 +346,6 @@ public class ShowDraftService {
                 .build();
     }
 
-    /*TODO: S3에서도 삭제하는 코드 추가하기*/
     public ShowDraftDeleteResponse deleteShowDraft() {
 
         KakaoOauth user = authUtil.getCurrentUser();
@@ -354,12 +355,63 @@ public class ShowDraftService {
         Shows draft = showsRepository.findByManagerAndStatus(manager, DomainEnums.ShowStatus.DRAFT)
                 .orElseThrow(() -> new IllegalArgumentException("삭제할 임시저장 공연이 없습니다."));
 
+        // 포스터 삭제
+        if (draft.getPosterUrl() != null && !draft.getPosterUrl().isBlank()) {
+            imageService.delete(draft.getPosterUrl());
+        }
+
+        // 상세 이미지 삭제
+        if (draft.getDetailImageUrls() != null) {
+            draft.getDetailImageUrls().forEach(imageService::delete);
+        }
         // 3. 공연 삭제
         // (Shows에 Cascade/orphanRemoval이 잘 설정되어 있다면
-        //  이 한 줄이 ShowTime, TicketOption, ShowSeat, Message 등을 연쇄적으로 삭제합니다)
         showsRepository.delete(draft);
 
         // 4. API 명세에 따라 { "deletedCount": 1 } 반환
         return new ShowDraftDeleteResponse(1);
     }
+
+    private void updatePoster(Shows draft, String newPosterUrl) {
+
+        String old = draft.getPosterUrl();
+
+        // 새 포스터가 없으면 아무것도 안 함
+        if (newPosterUrl == null)
+            return;
+
+        // 기존 파일이 있고, URL이 다르면 삭제
+        if (old != null && !old.equals(newPosterUrl)) {
+            imageService.delete(old);
+        }
+
+        draft.setPosterUrl(newPosterUrl);
+    }
+
+    public List<String> updateDetailImages(Shows draft, ShowUpdateRequest request) {
+
+        // DB에 저장된 이미지 목록
+        List<String> existingImages = draft.getDetailImageUrls();
+
+        // 프론트에서 유지하고 싶은 최종 이미지 목록
+        List<String> finalImages =
+                request.getDetailImages() == null ? List.of() : request.getDetailImages();
+
+        // 삭제 대상 = 기존 - 유지
+        List<String> deleteTargets = existingImages.stream()
+                .filter(url -> !finalImages.contains(url))
+                .toList();
+
+        // S3에서 삭제
+        deleteTargets.forEach(imageService::delete);
+
+        // 엔티티에 최종 목록 반영
+        draft.setDetailImageUrls(finalImages);
+
+        // 저장
+        showsRepository.save(draft);
+
+        return finalImages;
+    }
+
 }

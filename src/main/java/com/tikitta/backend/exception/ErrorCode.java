@@ -18,7 +18,9 @@ public enum ErrorCode {
     NOT_EXIST_FILE_EXTENSION(HttpStatus.BAD_REQUEST,"파일 이름이 정확하지 않습니다."),
     INVALID_FILE_EXTENSION(HttpStatus.BAD_REQUEST,"이미지 파일 형태가 잘못되었습니다."),
     NOT_EXIST_FILE(HttpStatus.NOT_FOUND,"파일이 전송되지 않았습니다."),
-    IO_EXCEPTION_UPLOAD_FILE(HttpStatus.INTERNAL_SERVER_ERROR,"업로드 중 오류 발생");
+    IO_EXCEPTION_UPLOAD_FILE(HttpStatus.INTERNAL_SERVER_ERROR,"업로드 중 오류 발생"),
+    INVALID_FILE_PATH(HttpStatus.BAD_REQUEST,"파일 이름이 정확하지 않습니다."),
+    IO_EXCEPTION_DELETE_FILE(HttpStatus.INTERNAL_SERVER_ERROR,"삭제 중 오류 발생");
 
     private final HttpStatus status;
     private final String message;
