@@ -38,8 +38,8 @@ public class QrCodeService {
             MatrixToImageWriter.writeToStream(matrix, "PNG", baos);
             byte[] bytes = baos.toByteArray();
 
-            // 3. 파일 이름 적당히
-            String fileName = content + ".png";
+            // 3. 파일 이름
+            String fileName = "QR_" + content + ".png";
 
             // 4. ImageService 재사용해서 S3 업로드
             return imageService.upload(fileName, bytes, "image/png");
