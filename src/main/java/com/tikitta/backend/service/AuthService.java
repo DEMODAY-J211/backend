@@ -29,9 +29,14 @@ public class AuthService {
     private final AuthUtil authUtil;
 
     public void signupManager(KakaoSignupRequest request) {
-        KakaoOauth kakaoOauth = kakaoOauthRepository.findById(request.getKakaoOauthId())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 Oauth ID입니다."));
+        KakaoOauth kakaoOauth = authUtil.getCurrentUser();
+        if (kakaoOauth == null) {
+            throw new IllegalStateException("로그인된 유저 정보를 찾을 수 없습니다.");
+        }
 
+        if (managerRepository.existsByKakaoOauth(kakaoOauth)) {
+            throw new IllegalStateException("이미 매니저로 가입한 유저입니다.");
+        }
         Manager manager = Manager.builder()
                 .kakaoOauth(kakaoOauth)
                 .name(request.getManagerName())
