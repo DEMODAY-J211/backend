@@ -41,13 +41,13 @@ public class NotificationBatchService {
         log.info("공연 시작 전 안내 메시지 배치 작업 시작: {}", LocalDateTime.now());
 
         // 1. "지금으로부터 2시간 뒤 ~ 1시간 59분 뒤" 사이에 시작하는 공연 회차 조회
-        LocalDateTime from = LocalDateTime.now().plusHours(2);
+        LocalDateTime from = LocalDateTime.now().plusHours(1);
         LocalDateTime to = from.plusMinutes(1);
 
         List<ShowTime> targetShowTimes = showTimeRepository.findAllByStartAtBetween(from, to);
 
         if (targetShowTimes.isEmpty()) {
-            log.info("2시간 내 시작하는 공연과 끝난 공연이 없어 배치 작업을 종료합니다.");
+            log.info("1시간 내 시작하는 공연과 끝난 공연이 없어 배치 작업을 종료합니다.");
             return;
         }
 
