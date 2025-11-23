@@ -2,6 +2,7 @@ package com.tikitta.backend.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
@@ -12,5 +13,12 @@ public class ManagerInfoResponse {
     private String managerName;
     private String managerIntro;
     private String managerText;
-    private List<String> managerUrl;
-}
+    private ManagerUrl managerUrl;
+
+    @Getter
+    @NoArgsConstructor
+    public static class ManagerUrl {
+        private String instagram;
+        private String youtube;
+        private String facebook;
+    }}
