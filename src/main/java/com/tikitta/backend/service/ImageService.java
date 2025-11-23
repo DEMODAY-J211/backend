@@ -84,7 +84,7 @@ public class ImageService {
             metadata.setContentType(file.getContentType());
 
             amazonS3.putObject(bucketName, key, file.getInputStream(), metadata);
-            amazonS3.setObjectAcl(bucketName, key, CannedAccessControlList.PublicRead);
+            // amazonS3.setObjectAcl(bucketName, key, CannedAccessControlList.PublicRead); // ACL 설정 제거
 
             return amazonS3.getUrl(bucketName, key).toString();
 
@@ -159,7 +159,7 @@ public class ImageService {
             ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
 
             amazonS3.putObject(bucketName, key, inputStream, metadata);
-            amazonS3.setObjectAcl(bucketName, key, CannedAccessControlList.PublicRead);
+            // amazonS3.setObjectAcl(bucketName, key, CannedAccessControlList.PublicRead); // ACL 설정 제거
 
             return amazonS3.getUrl(bucketName, key).toString();
 
