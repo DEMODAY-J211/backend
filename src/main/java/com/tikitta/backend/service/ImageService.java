@@ -3,6 +3,7 @@ package com.tikitta.backend.service;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.tikitta.backend.config.AmazonS3Config;
 import com.tikitta.backend.domain.KakaoOauth;
 import com.tikitta.backend.domain.Manager;
 import com.tikitta.backend.exception.CustomApplicationException;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
@@ -133,6 +135,27 @@ public class ImageService {
 
         if (!allowed.contains(ext)) {
             throw new CustomApplicationException(ErrorCode.INVALID_FILE_EXTENSION);
+        }
+    }
+
+    // 큐알코드 저장용 (바이트 배열)
+    public String upload(String originalFilename, byte[] bytes, String contentType) {
+        validateFile(originalFilename);
+
+        try {
+            String saveName = UUID.randomUUID() + "_" + originalFilename;
+
+            ObjectMetadata metadata = new ObjectMetadata();
+            metadata.setContentLength(bytes.length);
+            metadata.setContentType(contentType);
+
+            ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
+
+            amazonS3.putObject(bucketName, saveName, inputStream, metadata);
+
+            return amazonS3.getUrl(bucketName, saveName).toString();
+        } catch (Exception e) {
+            throw new CustomApplicationException(ErrorCode.IO_EXCEPTION_UPLOAD_FILE);
         }
     }
 }

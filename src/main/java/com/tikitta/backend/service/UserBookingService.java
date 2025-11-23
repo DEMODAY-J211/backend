@@ -39,6 +39,7 @@ public class UserBookingService {
     private final QrCodeService qrCodeService;
     private final MessageRepository messageRepository;
     private final SmsUtil smsUtil;
+    private final ImageService imageService;
 
     public BookingInfoResponse getBookingInfo(Long showId) {
         Shows show = showsRepository.findById(showId)
@@ -205,10 +206,12 @@ public class UserBookingService {
 
         } else if (saleMethod == DomainEnums.SaleMethod.SCHEDULING) {
             // ========== 스케줄링 ==========
-            items.add(ReservationItem.builder()
+            for (int i = 0; i < sessionDto.getQuantity(); i++) {
+                items.add(ReservationItem.builder()
                     .reservation(reservation)
                     .status(DomainEnums.ReservationStatus.PENDING_PAYMENT)
                     .build());
+            }
 
         } else {
             // ========== 스탠딩, 주최자 지정 ==========
@@ -305,17 +308,28 @@ public class UserBookingService {
 
         log.info("예매 취소 요청 완료: Reservation ID={}, New Status={}", reservationId, reservation.getStatus());
 
+        reservation.getReservationItems().forEach(item -> {
+            item.setStatus(DomainEnums.ReservationStatus.CANCEL_REQUESTED);
+        });
 
         // --- 좌석제 공연 (Select_by_User) ---
-
         if (reservation.getShowTime().getShow().getSaleMethod() == DomainEnums.SaleMethod.Select_by_User) {
             reservation.getReservationItems().forEach(item -> {
-                if (item.getShowSeat() != null) {
-                    item.getShowSeat().cancel(); // isAvailable = true
+                ShowSeat ss = item.getShowSeat();
+                if (ss != null) {
+                    ss.cancel();
                 }
             });
         }
 
+        // --- QR 코드 이미지 S3에서 삭제 ---
+        reservation.getReservationItems().forEach(item -> {
+            String qrUrl = item.getQrCodeUrl();
+            if (qrUrl != null && !qrUrl.isBlank()) {
+                imageService.delete(qrUrl);   // S3에서 삭제
+                item.setQrCodeUrl(null);      // DB에서도 URL 제거 (setter 필요)
+            }
+        });
     }
 
     @Transactional(readOnly = true)
