@@ -238,8 +238,10 @@ public class UserBookingService {
             }
 
             try {
+                Shows Qrshow = showTime.getShow();
+                Long showId = Qrshow.getId();
                 String qrContent = String.valueOf(item.getId());
-                String qrUrl = qrCodeService.createAndUploadQrCode(qrContent);
+                String qrUrl = qrCodeService.createAndUploadQrCode(showId, qrContent);
                 item.setQrCodeUrl(qrUrl);
             } catch (Exception e) {
                 log.error("ReservationItem ID [{}]에 대한 QR 코드 생성 실패", item.getId(), e);
