@@ -33,22 +33,14 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
         HttpSession session = request.getSession(false);
         String frontendBaseUrl = determineFrontendBaseUrl(request, session);
 
-        String savedRedirectUri = getTargetUrlFromSession(session);
-        System.out.println("### [Login Success] 세션에 저장된 Redirect URI: " + savedRedirectUri + " ###");
-
         String targetUrl;
 
-        if (savedRedirectUri != null) {
-            if (savedRedirectUri.startsWith("/")) {
-                targetUrl = buildUrl(frontendBaseUrl, savedRedirectUri);
-            } else {
-                targetUrl = savedRedirectUri;
-            }
-        } else {
-            OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-            Map<String, Object> attributes = oAuth2User.getAttributes();
+        // 🔥 redirect_uri 무시하고 항상 역할 기반 분기만 사용
+        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+        Map<String, Object> attributes = oAuth2User.getAttributes();
 
-            boolean isSignup = (boolean) attributes.getOrDefault("isSignup", false);
+        boolean isSignup = (boolean) attributes.getOrDefault("isSignup", false);
+
 
             if (isSignup) {
                 targetUrl = frontendBaseUrl + "/landing";
@@ -69,7 +61,7 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
                     targetUrl = frontendBaseUrl + "/landing?login=success&role=NO";
                 }
             }
-        }
+
 
         System.out.println("### 최종 Redirect 될 URL: " + targetUrl + " ###");
 
