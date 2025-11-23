@@ -17,6 +17,8 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long> {
 
     List<Reservation> findAllByShowTime(ShowTime showTime);
 
+    List<Reservation> findByShowTimeOrderByCreatedAtAsc(ShowTime showTime);
+
 
     List<Reservation> findByShowTimeAndStatusIn(ShowTime showTime, List<DomainEnums.ReservationStatus> statuses);
 
