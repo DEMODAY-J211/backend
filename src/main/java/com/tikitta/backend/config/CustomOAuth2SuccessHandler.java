@@ -35,7 +35,6 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
 
         String targetUrl;
 
-        // 🔥 redirect_uri 무시하고 항상 역할 기반 분기만 사용
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
         Map<String, Object> attributes = oAuth2User.getAttributes();
 
