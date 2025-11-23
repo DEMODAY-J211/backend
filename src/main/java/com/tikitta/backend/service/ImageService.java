@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.util.List;
 import java.util.UUID;
 
@@ -100,5 +101,26 @@ public class ImageService {
             throw new CustomApplicationException(ErrorCode.INVALID_FILE_PATH);
         }
         return url.substring(index + 1);
+    }
+
+    // 큐알코드 저장용 (바이트 배열)
+    public String upload(String originalFilename, byte[] bytes, String contentType) {
+        validateFile(originalFilename);
+
+        try {
+            String saveName = UUID.randomUUID() + "_" + originalFilename;
+
+            ObjectMetadata metadata = new ObjectMetadata();
+            metadata.setContentLength(bytes.length);
+            metadata.setContentType(contentType);
+
+            ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
+
+            amazonS3.putObject(bucketName, saveName, inputStream, metadata);
+
+            return amazonS3.getUrl(bucketName, saveName).toString();
+        } catch (Exception e) {
+            throw new CustomApplicationException(ErrorCode.IO_EXCEPTION_UPLOAD_FILE);
+        }
     }
 }
