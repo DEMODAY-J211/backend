@@ -13,5 +13,13 @@ public class KakaoSignupRequest {
     private String managerName;
     private String managerIntro;
     private String managerText;
-    private List<String> managerUrl;
+    private ManagerUrl managerUrl;
+
+    @Getter
+    @NoArgsConstructor
+    public static class ManagerUrl {
+        private String instagram;
+        private String youtube;
+        private String facebook;
+    }
 }

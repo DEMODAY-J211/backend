@@ -56,15 +56,5 @@ public class Manager {
     @Builder.Default
     private List<Location> likedLocations = new ArrayList<>();
 
-    // url을 리스트로 한번에 빌드하기 위해 빌더를 클래스 밖으로 뺐음
 
-//    @Builder
-//    public Manager(KakaoOauth kakaoOauth, String name, String pictureUrl, String introduction, String description) {
-//        this.kakaoOauth = kakaoOauth;
-//        this.name = name;
-//        this.pictureUrl = pictureUrl;
-//        this.introduction = introduction;
-//        this.description = description;
-//        this.urls = new ArrayList<>();
-//    }
 }
