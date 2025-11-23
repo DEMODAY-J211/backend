@@ -27,7 +27,7 @@ public class Shows {
     @JoinColumn(name = "location_id")
     private Location location;
 
-    @Column(name = "show_title", nullable = false)
+    @Column(name = "show_title")
     private String title;
 
     @Column(name = "show_poster_picture")
