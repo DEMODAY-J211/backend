@@ -39,8 +39,8 @@ public class SecurityConfig {
                                 "/user/*/organization",
                                 "/auth/**",
                                 "/api/test/**",
-                                "/shows/**/poster",
-                                "/shows/**/images"
+                                "/shows/*/poster",
+                                "/shows/*/images"
                         ).permitAll()
                         .requestMatchers("/manager/**").hasRole("MANAGER")
                         .requestMatchers("/user/*/myshow", "/user/*/booking/**", "/user/*/ticket/**").hasRole("USER")
