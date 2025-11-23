@@ -58,7 +58,7 @@ public class OAuth2UserCustomService extends DefaultOAuth2UserService {
             user = KakaoOauth.builder()
                     .email(email)
                     .name(name)
-                    .role(DomainEnums.Role.USER)
+                    .role(DomainEnums.Role.NO) // 기본 역할을 NO로 변경
                     .visitedPath(DomainEnums.VisitedPath.ETC)
                     .build();
             isSignup = true;
