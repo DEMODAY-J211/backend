@@ -36,15 +36,14 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/",
                                 "/user/*/main",
-                                "/user/*/detail/**",
                                 "/user/*/organization",
                                 "/auth/**",
                                 "/api/test/**",
-                                "/shows/**/poster", // 파일 업로드 경로 허용
-                                "/shows/**/images"  // 파일 업로드 경로 허용
+                                "/shows/**/poster",
+                                "/shows/**/images"
                         ).permitAll()
                         .requestMatchers("/manager/**").hasRole("MANAGER")
-                        .requestMatchers("/user/{managerId}/myshow", "/user/{managerId}/booking/**", "/user/{managerId}/ticket/**").hasRole("USER")
+                        .requestMatchers("/user/*/myshow", "/user/*/booking/**", "/user/*/ticket/**").hasRole("USER")
                         .anyRequest().authenticated()
                 )
                 .logout(logout -> logout
