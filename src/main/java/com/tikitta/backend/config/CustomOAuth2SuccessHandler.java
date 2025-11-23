@@ -56,7 +56,7 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
                     targetUrl = frontendBaseUrl + "/homeuser" + "?login=success&role=USER";
                 }
                 else{
-                    targetUrl = frontendBaseUrl + "/homeuser" + "?login=success&role=NO";
+                    targetUrl = frontendBaseUrl + "/landing" + "?login=success&role=NO";
                 }
             }
         }
