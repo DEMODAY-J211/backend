@@ -138,13 +138,13 @@ public class ImageService {
         }
     }
 
-    public String uploadShowQrCode(Long showId, String originalFilename, byte[] bytes, String contentType) {
+    public String uploadShowQrCode(Long managerId, Long showId, String originalFilename, byte[] bytes, String contentType) {
         validateFile(originalFilename);
 
         try {
-            // 로그인한 매니저 조회
-            Manager manager = getCurrentManager();
-            Long managerId = manager.getId();
+            // 파라미터로 받은 managerId를 사용
+            managerRepository.findById(managerId)
+                    .orElseThrow(() -> new IllegalArgumentException("해당 ID의 매니저를 찾을 수 없습니다: " + managerId));
 
             String saveName = UUID.randomUUID() + "_" + originalFilename;
 

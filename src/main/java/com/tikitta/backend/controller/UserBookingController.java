@@ -121,6 +121,7 @@ public class UserBookingController {
 
     @PostMapping("/confirm")
     public ResponseEntity<ApiResponse<Long>> confirmBooking(
+            @PathVariable Long managerId,
             HttpSession session, Authentication authentication) {
 
         BookingDto.SessionInfo sessionDto = (BookingDto.SessionInfo) session.getAttribute("currentBooking");
@@ -129,7 +130,7 @@ public class UserBookingController {
                     .body(new ApiResponse<>(400, "예매 정보가 만료되었거나 잘못된 요청입니다."));
         }
 
-        Long reservationId = userBookingService.createReservation(sessionDto, authentication).getId();
+        Long reservationId = userBookingService.createReservation(managerId, sessionDto, authentication).getId();
         session.removeAttribute("currentBooking");
 
         userBookingService.sendPaymentGuide(reservationId, authentication);

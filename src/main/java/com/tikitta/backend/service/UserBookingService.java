@@ -106,7 +106,7 @@ public class UserBookingService {
      * 예매 최종 확정 (Reservation 및 ReservationItem 생성)
      */
     @Transactional
-    public Reservation createReservation(BookingDto.SessionInfo sessionDto,
+    public Reservation createReservation(Long managerId, BookingDto.SessionInfo sessionDto,
                                          Authentication authentication) {
         /*
         // 1. 로그인된 사용자 정보 조회
@@ -241,7 +241,7 @@ public class UserBookingService {
                 Shows Qrshow = showTime.getShow();
                 Long showId = Qrshow.getId();
                 String qrContent = String.valueOf(item.getId());
-                String qrUrl = qrCodeService.createAndUploadQrCode(showId, qrContent);
+                String qrUrl = qrCodeService.createAndUploadQrCode(managerId, showId, qrContent);
                 item.setQrCodeUrl(qrUrl);
             } catch (Exception e) {
                 log.error("ReservationItem ID [{}]에 대한 QR 코드 생성 실패", item.getId(), e);
