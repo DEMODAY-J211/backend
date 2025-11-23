@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -12,6 +13,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -45,18 +47,24 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
             Map<String, Object> attributes = oAuth2User.getAttributes();
 
             boolean isSignup = (boolean) attributes.getOrDefault("isSignup", false);
-            String role = (String) attributes.getOrDefault("userRole", "NO");
 
             if (isSignup) {
                 targetUrl = frontendBaseUrl + "/landing";
             } else {
-                if ("MANAGER".equalsIgnoreCase(role)) {
-                    targetUrl = frontendBaseUrl + "/homemanager" + "?login=success&role=MANAGER";
-                } else if("USER".equalsIgnoreCase(role)) {
-                    targetUrl = frontendBaseUrl + "/homeuser" + "?login=success&role=USER";
-                }
-                else{
-                    targetUrl = frontendBaseUrl + "/landing" + "?login=success&role=NO";
+                Collection<? extends GrantedAuthority> authorities =
+                        authentication.getAuthorities();
+
+                boolean isManager = authorities.stream()
+                        .anyMatch(a -> a.getAuthority().equals("ROLE_MANAGER"));
+                boolean isUser = authorities.stream()
+                        .anyMatch(a -> a.getAuthority().equals("ROLE_USER"));
+
+                if (isManager) {
+                    targetUrl = frontendBaseUrl + "/homemanager?login=success&role=MANAGER";
+                } else if (isUser) {
+                    targetUrl = frontendBaseUrl + "/homeuser?login=success&role=USER";
+                } else {
+                    targetUrl = frontendBaseUrl + "/landing?login=success&role=NO";
                 }
             }
         }
