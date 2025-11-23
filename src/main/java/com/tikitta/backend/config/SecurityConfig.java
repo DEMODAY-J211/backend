@@ -45,6 +45,13 @@ public class SecurityConfig {
                         .requestMatchers("/user/*/myshow", "/user/*/booking/**", "/user/*/ticket/**").hasRole("USER")
                         .anyRequest().authenticated()
                 )
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/")
+                        .invalidateHttpSession(true)
+                        .clearAuthentication(true)
+                        .deleteCookies("JSESSIONID")
+                )
                 .oauth2Login(oauth -> oauth
                         .userInfoEndpoint(userInfo -> userInfo.userService(oAuth2UserCustomService))
                         .successHandler(customOAuth2SuccessHandler)
