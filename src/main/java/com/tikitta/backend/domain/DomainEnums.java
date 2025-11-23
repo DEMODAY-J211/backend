@@ -10,7 +10,7 @@ public final class DomainEnums {
      * 사용자 역할 (관리자 / 일반 예매자)
      */
     public enum Role {
-        MANAGER, USER
+        MANAGER, USER,NO
     }
 
     /**

@@ -46,7 +46,7 @@ public class KakaoOauth {
                       DomainEnums.VisitedPath visitedPath, String email) {
         this.kakaoId = kakaoId;
         this.name = name;
-        this.role = role != null ? role : DomainEnums.Role.USER; // 기본값 USER
+        this.role = role != null ? role : DomainEnums.Role.NO; // 기본값 NO로 변경
         this.createdAt = createdAt;
         this.visitedPath = visitedPath;
         this.email = email;
