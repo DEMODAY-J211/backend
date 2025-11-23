@@ -39,7 +39,9 @@ public class SecurityConfig {
                                 "/user/*/detail/**",
                                 "/user/*/organization",
                                 "/auth/**",
-                                "/api/test/**"
+                                "/api/test/**",
+                                "/shows/**/poster", // 파일 업로드 경로 허용
+                                "/shows/**/images"  // 파일 업로드 경로 허용
                         ).permitAll()
                         .requestMatchers("/manager/**").hasRole("MANAGER")
                         .requestMatchers("/user/*/myshow", "/user/*/booking/**", "/user/*/ticket/**").hasRole("USER")

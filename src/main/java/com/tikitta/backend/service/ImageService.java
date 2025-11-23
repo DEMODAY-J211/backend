@@ -1,9 +1,8 @@
 package com.tikitta.backend.service;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.tikitta.backend.config.AmazonS3Config;
+import com.tikitta.backend.domain.DomainEnums;
 import com.tikitta.backend.domain.KakaoOauth;
 import com.tikitta.backend.domain.Manager;
 import com.tikitta.backend.exception.CustomApplicationException;
@@ -13,6 +12,7 @@ import com.tikitta.backend.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -49,7 +49,11 @@ public class ImageService {
     // 공연 포스터 업로드
     // ----------------------------
     public String uploadShowPoster(MultipartFile file, Long showId) {
+        // 서비스 레벨에서 직접 인증/인가 처리
         Manager manager = getCurrentManager();
+        if (manager == null) {
+            throw new AccessDeniedException("포스터를 업로드하려면 매니저로 로그인해야 합니다.");
+        }
         Long managerId = manager.getId();
 
         String key = String.format("manager/%d/shows/%d/poster.jpg", managerId, showId);
@@ -60,7 +64,11 @@ public class ImageService {
     // 공연 상세 이미지 업로드
     // ----------------------------
     public List<String> uploadShowDetailImages(List<MultipartFile> files, Long showId) {
+        // 서비스 레벨에서 직접 인증/인가 처리
         Manager manager = getCurrentManager();
+        if (manager == null) {
+            throw new AccessDeniedException("상세 이미지를 업로드하려면 매니저로 로그인해야 합니다.");
+        }
         Long managerId = manager.getId();
 
         return files.stream()
@@ -106,9 +114,17 @@ public class ImageService {
     // 현재 로그인한 매니저 조회
     // ----------------------------
     private Manager getCurrentManager() {
-        KakaoOauth user = authUtil.getCurrentUser();
-        return managerRepository.findByKakaoOauth(user)
-                .orElseThrow(() -> new IllegalArgumentException("해당 사용자의 매니저 정보를 찾을 수 없습니다."));
+        try {
+            KakaoOauth user = authUtil.getCurrentUser();
+            if (user.getRole() != DomainEnums.Role.MANAGER) {
+                return null;
+            }
+            return managerRepository.findByKakaoOauth(user)
+                    .orElse(null);
+        } catch (Exception e) {
+            // 로그인하지 않은 사용자의 경우 예외가 발생할 수 있음
+            return null;
+        }
     }
 
     // ----------------------------
