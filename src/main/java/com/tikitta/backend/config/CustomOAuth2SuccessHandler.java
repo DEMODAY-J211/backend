@@ -43,7 +43,7 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
 
 
             if (isSignup) {
-                targetUrl = buildUrl(frontendBaseUrl, "landing");
+                targetUrl = buildUrl(frontendBaseUrl, "landing?login=success");
             } else {
                 Collection<? extends GrantedAuthority> authorities =
                         authentication.getAuthorities();
