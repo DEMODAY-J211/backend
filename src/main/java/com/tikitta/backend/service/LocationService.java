@@ -149,9 +149,9 @@ public class LocationService {
         Integer totalSeats;
         Integer floor;
 
-        if (request.getLocationStandingCount() != null && request.getLocationStandingCount() > 0) {
+        if (request.getLocationSeatCount() == 0) {
             type = DomainEnums.LocationType.STANDING;
-            totalSeats = request.getLocationStandingCount();
+            totalSeats = 0;
             floor = 0;
         } else {
             type = DomainEnums.LocationType.SEATED;
