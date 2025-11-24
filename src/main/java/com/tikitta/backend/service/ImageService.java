@@ -35,6 +35,17 @@ public class ImageService {
     private String bucketName;
 
     // ----------------------------
+    // 매니저 프로필 이미지 업로드
+    // ----------------------------
+    public String uploadManagerProfileImage(MultipartFile file) {
+        KakaoOauth user = authUtil.getCurrentUser();
+        Long kakaoId = user.getId();
+
+        String key = String.format("kakao/%d/profile.jpg", kakaoId);
+        return uploadToS3(file, key);
+    }
+
+    // ----------------------------
     // 단체 이미지 업로드
     // ----------------------------
     public String uploadOrganizationImage(MultipartFile file) {

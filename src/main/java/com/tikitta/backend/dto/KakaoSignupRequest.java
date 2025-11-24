@@ -8,7 +8,6 @@ import java.util.List;
 @Getter
 @NoArgsConstructor
 public class KakaoSignupRequest {
-    private Long kakaoOauthId;
     private String managerPicture;
     private String managerName;
     private String managerIntro;

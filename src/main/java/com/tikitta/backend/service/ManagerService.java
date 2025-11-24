@@ -85,8 +85,7 @@ public class ManagerService {
     }
 
     @Transactional
-    public ManagerInfoResponse updateMyOrganizationInfo(Authentication authentication,
-                                                        ManagerUpdateRequest request) {
+    public ManagerInfoResponse updateMyOrganizationInfo(ManagerUpdateRequest request) {
 
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
         Map<String, Object> kakaoAccount = (Map<String, Object>) oAuth2User.getAttributes().get("kakao_account");

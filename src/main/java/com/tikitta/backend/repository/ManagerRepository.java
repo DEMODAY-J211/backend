@@ -8,4 +8,6 @@ import java.util.Optional;
 
 public interface ManagerRepository extends JpaRepository<Manager,Long> {
     Optional<Manager> findByKakaoOauth(KakaoOauth kakaoOauth);
+    boolean existsByKakaoOauth(KakaoOauth kakaoOauth);
+
 }

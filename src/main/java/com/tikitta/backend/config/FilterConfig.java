@@ -1,3 +1,4 @@
+/*
 package com.tikitta.backend.config;
 
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -17,3 +18,4 @@ public class FilterConfig {
         return registrationBean;
     }
 }
+*/
