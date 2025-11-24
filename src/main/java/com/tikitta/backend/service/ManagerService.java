@@ -6,6 +6,7 @@ import com.tikitta.backend.domain.Manager;
 import com.tikitta.backend.dto.LocationLikeResponse;
 import com.tikitta.backend.dto.ManagerInfoResponse;
 import com.tikitta.backend.dto.ManagerUpdateRequest;
+import com.tikitta.backend.repository.KakaoOauthRepository;
 import com.tikitta.backend.repository.LocationRepository;
 import com.tikitta.backend.repository.ManagerRepository;
 import com.tikitta.backend.util.AuthUtil;
@@ -13,11 +14,13 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,6 +32,7 @@ public class ManagerService {
     private final LocationRepository locationRepository;
     private final AuthUtil authUtil;
     private final ImageService imageService;
+    private final KakaoOauthRepository kakaoOauthRepository;
 
     public List<LocationLikeResponse> getLikedLocations() {
         KakaoOauth currentUser = authUtil.getCurrentUser();
@@ -60,11 +64,16 @@ public class ManagerService {
     }
 
 
-    public ManagerInfoResponse getMyOrganizationInfo() {
-        KakaoOauth oauth = authUtil.getCurrentUser();
+    public ManagerInfoResponse getMyOrganizationInfo(Authentication authentication) {
+        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+        Map<String, Object> kakaoAccount = (Map<String, Object>) oAuth2User.getAttributes().get("kakao_account");
+        String email = (String) kakaoAccount.get("email");
 
-        Manager manager = managerRepository.findByKakaoOauth(oauth)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "매니저 정보가 존재하지 않습니다."));
+        KakaoOauth kakaoOauth = kakaoOauthRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("카카오 계정을 찾을 수 없습니다."));
+
+        Manager manager = managerRepository.findByKakaoOauth(kakaoOauth)
+                .orElseThrow(() -> new RuntimeException("매니저 정보를 찾을 수 없습니다."));
 
         return new ManagerInfoResponse(
                 manager.getPictureUrl(),
@@ -78,12 +87,16 @@ public class ManagerService {
     @Transactional
     public ManagerInfoResponse updateMyOrganizationInfo(ManagerUpdateRequest request) {
 
-        KakaoOauth oauth = authUtil.getCurrentUser();
+        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+        Map<String, Object> kakaoAccount = (Map<String, Object>) oAuth2User.getAttributes().get("kakao_account");
+        String email = (String) kakaoAccount.get("email");
 
-        Manager manager = managerRepository.findByKakaoOauth(oauth)
-                .orElseThrow(() ->
-                        new ResponseStatusException(HttpStatus.NOT_FOUND, "매니저 정보가 존재하지 않습니다.")
-                );
+        KakaoOauth kakaoOauth = kakaoOauthRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("카카오 계정을 찾을 수 없습니다."));
+
+        Manager manager = managerRepository.findByKakaoOauth(kakaoOauth)
+                .orElseThrow(() -> new RuntimeException("매니저 정보를 찾을 수 없습니다."));
+
 
         // PATCH: null이 아닌 필드만 업데이트
         if (request.getManagerPicture() != null) {
