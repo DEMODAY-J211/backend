@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +28,7 @@ public class AuthService {
     private final KakaoOauthRepository kakaoOauthRepository;
     private final ManagerRepository managerRepository;
     private final AuthUtil authUtil;
+    private final ImageService imageService; // ImageService 주입
 
     public void signupManager(KakaoSignupRequest request) {
         KakaoOauth kakaoOauth = authUtil.getCurrentUser();
@@ -34,20 +36,40 @@ public class AuthService {
             throw new IllegalStateException("로그인된 유저 정보를 찾을 수 없습니다.");
         }
 
-        if (managerRepository.existsByKakaoOauth(kakaoOauth)) {
-            throw new IllegalStateException("이미 매니저로 가입한 유저입니다.");
+        Optional<Manager> existingManagerOpt = managerRepository.findByKakaoOauth(kakaoOauth);
+
+        if (existingManagerOpt.isPresent()) {
+            // 수정 로직
+            Manager manager = existingManagerOpt.get();
+
+            // 이미지 변경 시 기존 이미지 삭제
+            if (request.getManagerPicture() != null && !request.getManagerPicture().equals(manager.getPictureUrl())) {
+                if (manager.getPictureUrl() != null && !manager.getPictureUrl().isEmpty()) {
+                    imageService.delete(manager.getPictureUrl());
+                }
+                manager.setPictureUrl(request.getManagerPicture());
+            }
+
+            manager.setName(request.getManagerName());
+            manager.setIntroduction(request.getManagerIntro());
+            manager.setDescription(request.getManagerText());
+            manager.setUrls(request.getManagerUrl());
+
+            managerRepository.save(manager);
+
+        } else {
+            // 생성 로직
+            Manager manager = Manager.builder()
+                    .kakaoOauth(kakaoOauth)
+                    .name(request.getManagerName())
+                    .pictureUrl(request.getManagerPicture())
+                    .introduction(request.getManagerIntro())
+                    .description(request.getManagerText())
+                    .urls(request.getManagerUrl())
+                    .build();
+
+            managerRepository.save(manager);
         }
-        Manager manager = Manager.builder()
-                .kakaoOauth(kakaoOauth)
-                .name(request.getManagerName())
-                .pictureUrl(request.getManagerPicture())
-                .introduction(request.getManagerIntro())
-                .description(request.getManagerText())
-                .urls(request.getManagerUrl())
-                .build();
-
-        managerRepository.save(manager);
-
     }
 
     public void updateUserRoleandSession(String role){
@@ -76,4 +98,3 @@ public class AuthService {
         SecurityContextHolder.getContext().setAuthentication(newAuth);
     }
 }
-
