@@ -134,18 +134,25 @@ public class ShowDraftService {
         for (var dto : items) {
             LocalDateTime bookingEndAt = dto.getShowStart().minusHours(1);
 
+            Long seatCount = request.getSeatCount();
+            if (seatCount == null) {
+                seatCount = draft.getSeatCount();
+            }
+
+            if (seatCount == null) {
+                throw new IllegalStateException("좌석 수 없이 회차를 생성/수정할 수 없습니다.");
+            }
+
             ShowTime.ShowTimeBuilder builder = ShowTime.builder()
                     .show(draft)
                     .startAt(dto.getShowStart())
                     .endAt(dto.getShowEnd())
                     .bookingEndAt(bookingEndAt)
-                    .remainSeatCount(request.getSeatCount());
+                    .remainSeatCount(seatCount);
 
             // 스탠딩일 때만 총수량을 빌더에 추가
             if (draft.getSaleMethod() == DomainEnums.SaleMethod.STANDING) {
-                Long total = request.getSeatCount();
-                builder.totalStandingQuantity(total)
-                        .remainSeatCount(total);
+                builder.totalStandingQuantity(seatCount);
             }
 
             ShowTime st = builder.build();
