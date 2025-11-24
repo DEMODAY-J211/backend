@@ -25,7 +25,8 @@ public class Message {
     @Column(name = "message_book_confirm")
     private String bookingConfirmation; //예매확정
 
-    @Column(name = "message_book_custom", nullable = false)
+    @Column(name = "message_book_custom")
+   // @Column(name = "message_book_custom", nullable = false)
     private String bookingCustom; //예매확정-필수문장
 
     @Column(name = "message_show_guide")
