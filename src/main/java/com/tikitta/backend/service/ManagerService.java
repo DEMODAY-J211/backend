@@ -60,8 +60,8 @@ public class ManagerService {
     }
 
 
-    public ManagerInfoResponse getMyOrganizationInfo(Authentication authentication) {
-        KakaoOauth oauth = (KakaoOauth) authentication.getPrincipal();
+    public ManagerInfoResponse getMyOrganizationInfo() {
+        KakaoOauth oauth = authUtil.getCurrentUser();
 
         Manager manager = managerRepository.findByKakaoOauth(oauth)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "매니저 정보가 존재하지 않습니다."));
@@ -76,10 +76,9 @@ public class ManagerService {
     }
 
     @Transactional
-    public ManagerInfoResponse updateMyOrganizationInfo(Authentication authentication,
-                                                        ManagerUpdateRequest request) {
+    public ManagerInfoResponse updateMyOrganizationInfo(ManagerUpdateRequest request) {
 
-        KakaoOauth oauth = (KakaoOauth) authentication.getPrincipal();
+        KakaoOauth oauth = authUtil.getCurrentUser();
 
         Manager manager = managerRepository.findByKakaoOauth(oauth)
                 .orElseThrow(() ->
