@@ -24,7 +24,7 @@ public class S3Controller {
     )
     public ResponseEntity<ApiResponse<String>> uploadPoster(
             @PathVariable Long showId,
-            @RequestPart("poster") MultipartFile poster
+            @RequestParam("poster") MultipartFile poster
     ) {
         String url = imageService.uploadShowPoster(poster, showId);
 
@@ -40,7 +40,7 @@ public class S3Controller {
     )
     public ResponseEntity<ApiResponse<List<String>>> uploadImages(
             @PathVariable Long showId,
-            @RequestPart("images") List<MultipartFile> images
+            @RequestParam("images") List<MultipartFile> images
     ) {
         List<String> urls = imageService.uploadShowDetailImages(images,showId);
 
@@ -56,7 +56,7 @@ public class S3Controller {
     )
     public ResponseEntity<ApiResponse<String>> uploadOrganizationImage(
             @PathVariable Long managerId,
-            @RequestPart("organizationImage") MultipartFile organizationImage
+            @RequestParam("organizationImage") MultipartFile organizationImage
     ){
         String url = imageService.uploadOrganizationImage(organizationImage);
 
