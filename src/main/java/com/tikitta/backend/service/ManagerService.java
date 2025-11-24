@@ -64,16 +64,10 @@ public class ManagerService {
     }
 
 
-    public ManagerInfoResponse getMyOrganizationInfo(Authentication authentication) {
-        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-        Map<String, Object> kakaoAccount = (Map<String, Object>) oAuth2User.getAttributes().get("kakao_account");
-        String email = (String) kakaoAccount.get("email");
-
-        KakaoOauth kakaoOauth = kakaoOauthRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("카카오 계정을 찾을 수 없습니다."));
-
-        Manager manager = managerRepository.findByKakaoOauth(kakaoOauth)
-                .orElseThrow(() -> new RuntimeException("매니저 정보를 찾을 수 없습니다."));
+    public ManagerInfoResponse getMyOrganizationInfo() {
+        KakaoOauth oauth = authUtil.getCurrentUser();
+        Manager manager = managerRepository.findByKakaoOauth(oauth)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "매니저 정보가 존재하지 않습니다."));
 
         return new ManagerInfoResponse(
                 manager.getPictureUrl(),
@@ -85,17 +79,14 @@ public class ManagerService {
     }
 
     @Transactional
-    public ManagerInfoResponse updateMyOrganizationInfo(ManagerUpdateRequest request) {
+        public ManagerInfoResponse updateMyOrganizationInfo(ManagerUpdateRequest request) {
 
-        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-        Map<String, Object> kakaoAccount = (Map<String, Object>) oAuth2User.getAttributes().get("kakao_account");
-        String email = (String) kakaoAccount.get("email");
+            KakaoOauth oauth = authUtil.getCurrentUser();
 
-        KakaoOauth kakaoOauth = kakaoOauthRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("카카오 계정을 찾을 수 없습니다."));
-
-        Manager manager = managerRepository.findByKakaoOauth(kakaoOauth)
-                .orElseThrow(() -> new RuntimeException("매니저 정보를 찾을 수 없습니다."));
+            Manager manager = managerRepository.findByKakaoOauth(oauth)
+                    .orElseThrow(() ->
+                            new ResponseStatusException(HttpStatus.NOT_FOUND, "매니저 정보가 존재하지 않습니다.")
+                    );
 
 
         // PATCH: null이 아닌 필드만 업데이트
