@@ -41,7 +41,7 @@ public class ImageService {
         KakaoOauth user = authUtil.getCurrentUser();
         Long kakaoId = user.getId();
 
-        String key = String.format("user/%d/profile.jpg", kakaoId);
+        String key = String.format("kakao/%d/profile.jpg", kakaoId);
         return uploadToS3(file, key);
     }
 
