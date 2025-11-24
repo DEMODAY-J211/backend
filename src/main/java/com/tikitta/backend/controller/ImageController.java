@@ -22,6 +22,6 @@ public class ImageController {
     @PostMapping("/image")
     public ResponseEntity<ApiResponse<List<String>>> uploadManagerImage(@RequestParam("image") MultipartFile image) {
         String imageUrl = imageService.uploadManagerProfileImage(image);
-        return ResponseEntity.ok(new ApiResponse<>(true, "200", "이미지 업로드 성공", List.of(imageUrl)));
+        return ResponseEntity.ok(new ApiResponse<>(200, "이미지 업로드 성공", List.of(imageUrl)));
     }
 }
