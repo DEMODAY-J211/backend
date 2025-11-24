@@ -197,8 +197,8 @@ public class ManagerController {
 
     @GetMapping("/organizationview")
     @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<ApiResponse<Map<String, ManagerInfoResponse>>> getMyOrganizationInfo(Authentication authentication) {
-        ManagerInfoResponse managerInfo = managerService.getMyOrganizationInfo(authentication);
+    public ResponseEntity<ApiResponse<Map<String, ManagerInfoResponse>>> getMyOrganizationInfo() {
+        ManagerInfoResponse managerInfo = managerService.getMyOrganizationInfo();
         return ResponseEntity.ok(new ApiResponse<>(Map.of("manager", managerInfo))
         );
     }
@@ -206,10 +206,9 @@ public class ManagerController {
     @PatchMapping("/organizationpatch")
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<Map<String, ManagerInfoResponse>>> updateMyOrganization(
-            @RequestBody ManagerUpdateRequest request,
-            Authentication authentication
+            @RequestBody ManagerUpdateRequest request
     ) {
-        ManagerInfoResponse updated = managerService.updateMyOrganizationInfo(authentication, request);
+        ManagerInfoResponse updated = managerService.updateMyOrganizationInfo(request);
 
         return ResponseEntity.ok(
                 new ApiResponse<>(Map.of("manager", updated))
