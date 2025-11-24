@@ -17,11 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -37,8 +33,8 @@ public class LocationService {
     private final LocationMapRepository locationMapRepository;
     private final ShowSeatRepository showSeatRepository;
     private final AuthUtil authUtil;
+    private final ImageService imageService; // ImageService 주입
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final String uploadDir = "src/main/resources/static/images/";
 
     @Transactional
     public SeatDeleteResponse createShowSeatsFromMap(Long locationId, SeatDeleteRequest request) {
@@ -149,8 +145,6 @@ public class LocationService {
     
     @Transactional
     public Location registerLocation(VenueRegisterRequest request, MultipartFile locationPicture) {
-        String pictureUrl = saveFile(locationPicture);
-
         DomainEnums.LocationType type;
         Integer totalSeats;
         Integer floor;
@@ -165,16 +159,22 @@ public class LocationService {
             floor = request.getLocationSeatFloor() != null ? request.getLocationSeatFloor() : 1;
         }
 
+        // 1. 이미지 URL 없이 Location 정보 먼저 저장
         Location location = Location.builder()
                 .name(request.getLocationName())
                 .address(request.getLocationAddress())
                 .addressDetail(request.getLocationAddressDetail())
-                .seatPictureUrl(pictureUrl)
                 .totalSeats(totalSeats)
                 .floor(floor)
                 .type(type)
                 .build();
+        locationRepository.saveAndFlush(location); // ID 생성을 위해 즉시 DB 반영
 
+        // 2. S3에 이미지 업로드
+        String pictureUrl = imageService.uploadLocationImage(locationPicture, location.getId());
+
+        // 3. 이미지 URL을 Location에 업데이트
+        location.setSeatPictureUrl(pictureUrl);
         locationRepository.save(location);
 
         KakaoOauth currentUser = authUtil.getCurrentUser();
@@ -357,26 +357,6 @@ public class LocationService {
 
         } catch (IOException e) {
             throw new RuntimeException("Failed to process seat map update", e);
-        }
-    }
-    
-    private String saveFile(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            return null;
-        }
-
-        try {
-            File directory = new File(uploadDir);
-            if (!directory.exists()) {
-                directory.mkdirs();
-            }
-
-            String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
-            Path path = Paths.get(uploadDir + fileName);
-            Files.write(path, file.getBytes());
-            return "/images/" + fileName;
-        } catch (IOException e) {
-            throw new RuntimeException("File upload failed", e);
         }
     }
 

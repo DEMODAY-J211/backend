@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter; // Setter 임포트
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,6 +29,7 @@ public class Location {
     @Column(name = "location_address_detail")
     private String addressDetail;
 
+    @Setter // Setter 추가
     @Column(name = "location_seat_picture")
     private String seatPictureUrl;
 

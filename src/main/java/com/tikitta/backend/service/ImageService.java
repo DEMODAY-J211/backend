@@ -35,6 +35,14 @@ public class ImageService {
     private String bucketName;
 
     // ----------------------------
+    // 공연장 이미지 업로드
+    // ----------------------------
+    public String uploadLocationImage(MultipartFile file, Long locationId) {
+        String key = String.format("location/%d/image.jpg", locationId);
+        return uploadToS3(file, key);
+    }
+
+    // ----------------------------
     // 매니저 프로필 이미지 업로드
     // ----------------------------
     public String uploadManagerProfileImage(MultipartFile file) {
