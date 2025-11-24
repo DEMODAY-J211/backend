@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
 @Service
 @RequiredArgsConstructor
@@ -137,11 +138,14 @@ public class ShowDraftService {
                     .show(draft)
                     .startAt(dto.getShowStart())
                     .endAt(dto.getShowEnd())
-                    .bookingEndAt(bookingEndAt);
+                    .bookingEndAt(bookingEndAt)
+                    .remainSeatCount(request.getSeatCount());
 
             // 스탠딩일 때만 총수량을 빌더에 추가
             if (draft.getSaleMethod() == DomainEnums.SaleMethod.STANDING) {
-                builder.totalStandingQuantity(request.getSeatCount());
+                Long total = request.getSeatCount();
+                builder.totalStandingQuantity(total)
+                        .remainSeatCount(total);
             }
 
             ShowTime st = builder.build();
