@@ -32,7 +32,9 @@ public class Message {
     @Column(name = "message_show_guide")
     private String showGuide; //공연안내
 
-    @Column(name = "message_show_qr", nullable = false)
+
+    @Column(name = "message_show_qr")
+    //@Column(name = "message_show_qr", nullable = false)
     private String qrGuide; //공연안내-큐알
 
     @Column(name = "message_review_request")
