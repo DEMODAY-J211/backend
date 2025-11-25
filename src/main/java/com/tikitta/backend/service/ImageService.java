@@ -18,6 +18,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -150,7 +153,20 @@ public class ImageService {
     // URL에서 S3 Key 추출
     // ----------------------------
     private String extractKeyFromUrl(String s3Url) {
-        return s3Url.substring(s3Url.indexOf(bucketName) + bucketName.length() + 1);
+        try {
+            URL url = new URL(s3Url);
+            String path = url.getPath(); // 예: /manager/1/shows/poster.jpg
+
+            // 맨 앞의 '/' 제거
+            String key = path.startsWith("/") ? path.substring(1) : path;
+
+            // URL 인코딩된 문자열(한글, 공백 등) 디코딩
+            return URLDecoder.decode(key, StandardCharsets.UTF_8.name());
+
+        } catch (Exception e) {
+            log.error("S3 Key 추출 실패: {}", s3Url, e);
+            throw new CustomApplicationException(ErrorCode.IO_EXCEPTION_UPLOAD_FILE); // 혹은 적절한 에러 처리
+        }
     }
 
     // ----------------------------
