@@ -370,6 +370,8 @@ public class ShowDraftService {
             throw new IllegalArgumentException("삭제할 임시저장 공연이 없습니다.");
         }
 
+        int deletedCount = drafts.size();
+
         for (Shows draft : drafts) {
             // 포스터 삭제
             if (draft.getPosterUrl() != null && !draft.getPosterUrl().isBlank()) {
@@ -380,13 +382,13 @@ public class ShowDraftService {
             if (draft.getDetailImageUrls() != null) {
                 draft.getDetailImageUrls().forEach(imageService::delete);
             }
+            
+            // 공연 삭제
+            showsRepository.delete(draft);
         }
 
-        // 3. 공연 삭제
-        showsRepository.deleteAll(drafts);
-
-        // 4. API 명세에 따라 { "deletedCount": N } 반환
-        return new ShowDraftDeleteResponse(drafts.size());
+        // API 명세에 따라 { "deletedCount": N } 반환
+        return new ShowDraftDeleteResponse(deletedCount);
     }
 
     private void updatePoster(Shows draft, String newPosterUrl) {

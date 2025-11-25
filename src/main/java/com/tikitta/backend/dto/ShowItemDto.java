@@ -1,6 +1,7 @@
 package com.tikitta.backend.dto;
 
 import com.tikitta.backend.domain.DomainEnums;
+import com.tikitta.backend.domain.Location;
 import com.tikitta.backend.domain.ShowTime;
 import com.tikitta.backend.domain.Shows;
 import lombok.Getter;
@@ -26,7 +27,10 @@ public class ShowItemDto {
         this.showId = show.getId();
         this.showTitle = show.getTitle();
         this.showPosterPicture = show.getPosterUrl();
-        this.showLocation = show.getLocation().getName();
+        
+        Location location = show.getLocation();
+        this.showLocation = (location != null) ? location.getName() : null;
+
         this.isReservable = show.getStatus() == DomainEnums.ShowStatus.PUBLISHED &&
                 show.getBookingStartAt() != null &&
                 show.getBookingStartAt().isBefore(LocalDateTime.now());
