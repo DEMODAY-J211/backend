@@ -1,11 +1,13 @@
 package com.tikitta.backend.controller;
 
+import com.tikitta.backend.dto.DraftShowIdResponseDto;
 import com.tikitta.backend.dto.venue.SeatDeleteRequest;
 import com.tikitta.backend.dto.venue.SeatDeleteResponse;
 import com.tikitta.backend.dto.venue.SeatVipRequest;
 import com.tikitta.backend.dto.venue.SeatVipResponse;
 import com.tikitta.backend.dto.venue.VenueSeatmapResponse;
 import com.tikitta.backend.service.LocationService;
+import com.tikitta.backend.service.ShowService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +20,18 @@ import java.util.Map;
 public class ShowsManagerController {
 
     private final LocationService locationService;
+    private final ShowService showService;
+
+    @GetMapping("/draft")
+    public ResponseEntity<?> getDraftShowId() {
+        DraftShowIdResponseDto response = showService.getDraftShowId();
+        return ResponseEntity.ok().body(Map.of(
+                "success", true,
+                "code", 200,
+                "message", "DRAFT 상태의 공연 id를 성공적으로 반환했습니다.",
+                "data", response
+        ));
+    }
 
     @GetMapping("/{locationId}/seatmap")
     public ResponseEntity<?> getSeatmap(@PathVariable Long locationId) {

@@ -12,4 +12,5 @@ public interface ShowsRepository extends JpaRepository<Shows, Long> {
     List<Shows> findByManager(Manager manager);
     List<Shows> findByManagerId(Long managerId);
     Optional<Shows> findByManagerAndStatus(Manager manager, DomainEnums.ShowStatus status);
+    Optional<Shows> findTopByManagerAndStatusOrderByRegistrationDateDesc(Manager manager, DomainEnums.ShowStatus status);
 }

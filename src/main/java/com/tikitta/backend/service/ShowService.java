@@ -45,6 +45,18 @@ public class ShowService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
 
+    public DraftShowIdResponseDto getDraftShowId() {
+        KakaoOauth user = authUtil.getCurrentUser();
+        Manager manager = managerRepository.findByKakaoOauth(user)
+            .orElseThrow(() -> new IllegalArgumentException("해당 사용자의 매니저 정보를 찾을 수 없습니다."));
+
+        Optional<Shows> draftShow = showsRepository.findTopByManagerAndStatusOrderByRegistrationDateDesc(manager, DomainEnums.ShowStatus.DRAFT);
+
+        Long showId = draftShow.map(Shows::getId).orElse(null);
+
+        return new DraftShowIdResponseDto(showId);
+    }
+
     // ... (기존 getMyShows, getReservationList 메소드)
     public MyShowListResponseDto getMyShows() {
         KakaoOauth user=authUtil.getCurrentUser();
