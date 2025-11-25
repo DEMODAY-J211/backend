@@ -62,12 +62,20 @@ public class ManagerController {
     // ManagerController.java
     @GetMapping("/link")
     @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<String> getManagerLink() {
+    public ResponseEntity<Map<String, Object>> getManagerLink() {
         KakaoOauth user = authUtil.getCurrentUser();
         Manager manager = managerRepository.findByKakaoOauth(user)
                 .orElseThrow(() -> new RuntimeException("매니저 정보를 찾을 수 없습니다. (매니저 회원가입이 완료되지 않았을 수 있습니다)"));
         String managerLink = frontendUrl + manager.getId() + "/homeuser";
-        return ResponseEntity.ok(managerLink);
+        
+        Map<String, Object> data = Map.of("url", managerLink);
+        Map<String, Object> responseBody = new LinkedHashMap<>();
+        responseBody.put("success", true);
+        responseBody.put("code", 200);
+        responseBody.put("message", "success");
+        responseBody.put("data", data);
+
+        return ResponseEntity.ok(responseBody);
     }
 
     @GetMapping("/shows/list")
