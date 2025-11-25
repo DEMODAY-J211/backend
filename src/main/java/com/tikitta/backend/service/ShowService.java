@@ -50,7 +50,7 @@ public class ShowService {
         Manager manager = managerRepository.findByKakaoOauth(user)
             .orElseThrow(() -> new IllegalArgumentException("해당 사용자의 매니저 정보를 찾을 수 없습니다."));
 
-        Optional<Shows> draftShow = showsRepository.findTopByManagerAndStatusOrderByRegistrationDateDesc(manager, DomainEnums.ShowStatus.DRAFT);
+        Optional<Shows> draftShow = showsRepository.findTopByManagerAndStatusOrderByIdDesc(manager, DomainEnums.ShowStatus.DRAFT);
 
         Long showId = draftShow.map(Shows::getId).orElse(null);
 
