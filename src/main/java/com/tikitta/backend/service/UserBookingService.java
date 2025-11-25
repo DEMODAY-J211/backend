@@ -498,16 +498,17 @@ public class UserBookingService {
 
         if (message == null) return;
 
-        String paymentGuide = message.getPaymentGuide();
+        String paymentGuideTemplate = message.getPaymentGuide();
 
-        if (paymentGuide != null && !paymentGuide.isBlank()) {
+        if (paymentGuideTemplate != null && !paymentGuideTemplate.isBlank()) {
             try {
+                String finalMessage = SmsUtil.formatMessage(paymentGuideTemplate, reservation);
                 smsUtil.sendLms(
                         reservation.getUserPhone(),
                         "[티킷타] 입금 안내",
-                        paymentGuide
+                        finalMessage
                 );
-            } catch (IOException e) {
+            } catch (Exception e) {
                 log.error("입금 안내 LMS 발송 실패. reservationId={}", reservation.getId(), e);
             }
         }
