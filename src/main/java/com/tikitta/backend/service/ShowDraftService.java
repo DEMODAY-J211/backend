@@ -140,7 +140,8 @@ public class ShowDraftService {
             }
 
             if (seatCount == null) {
-                throw new IllegalStateException("좌석 수 없이 회차를 생성/수정할 수 없습니다.");
+                seatCount = 100L;
+                //throw new IllegalStateException("좌석 수 없이 회차를 생성/수정할 수 없습니다.");
             }
 
             ShowTime.ShowTimeBuilder builder = ShowTime.builder()
