@@ -38,6 +38,9 @@ public class LocationService {
 
     @Transactional
     public SeatDeleteResponse createShowSeatsFromMap(Long locationId, SeatDeleteRequest request) {
+        // 기존에 존재하던 템플릿 ShowSeat들을 모두 삭제
+        showSeatRepository.deleteBySeat_Location_IdAndShowTimeIsNull(locationId);
+        
         try {
             // 1. 원본 LocationMap 및 Location 조회
             LocationMap locationMap = locationMapRepository.findByLocationId(locationId)
