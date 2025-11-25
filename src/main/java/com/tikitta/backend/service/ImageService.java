@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
@@ -128,8 +129,17 @@ public class ImageService {
     // S3 파일 삭제
     // ----------------------------
     public void delete(String s3Url) {
-        String key = extractKeyFromUrl(s3Url);
-        amazonS3.deleteObject(bucketName, key);
+        if (!StringUtils.hasText(s3Url) || !s3Url.contains(bucketName)) {
+            log.warn("삭제할 수 없는 URL입니다 (null이거나 유효한 S3 URL이 아님): {}", s3Url);
+            return;
+        }
+        
+        try {
+            String key = extractKeyFromUrl(s3Url);
+            amazonS3.deleteObject(bucketName, key);
+        } catch (CustomApplicationException e) {
+            log.error("S3 파일 삭제 중 오류 발생 (URL: {}): {}", s3Url, e.getMessage());
+        }
     }
 
     // ----------------------------
