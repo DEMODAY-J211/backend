@@ -220,6 +220,7 @@ public class ShowService {
                     String finalMessage = SmsUtil.formatMessage(template, reservation);
                     //String subject = String.format("[%s] 예매가 확정되었습니다.", reservation.getShowTime().getShow().getTitle());
                     String subject = "[티킷타] 입금 확정안내";
+                    log.info("template문자는존재함{}",finalMessage);
                     smsUtil.sendLms(reservation.getPhone(), subject, finalMessage);
                     log.info("예매 확정 메시지 발송 완료: Reservation ID {}", reservation.getId());
                 } else {
