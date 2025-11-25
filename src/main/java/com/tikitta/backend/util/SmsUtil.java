@@ -65,6 +65,20 @@ public class SmsUtil {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd (E) HH:mm");
         String formattedShowTime = showTime.getStartAt().format(formatter);
 
+
+        String bankKoreanName = "";
+        switch (show.getBankName()) {
+            case WOORI: bankKoreanName = "우리은행"; break;
+            case NH: bankKoreanName = "농협은행"; break;
+            case KAKAO: bankKoreanName = "카카오뱅크"; break;
+            case SHINHAN: bankKoreanName = "신한은행"; break;
+            case IBK: bankKoreanName = "기업은행"; break;
+            case HANA: bankKoreanName = "하나은행"; break;
+            case KB: bankKoreanName = "국민은행"; break;
+            case EPOST: bankKoreanName = "우체국"; break;
+            case TOSS: bankKoreanName = "토스뱅크"; break;
+        }
+
         return template
                 .replace("{단체명}", show.getManager().getName())
                 .replace("{공연명}", show.getTitle())
@@ -76,7 +90,7 @@ public class SmsUtil {
                 .replace("{0000원}",formattedPrice)
                 .replace("{0,000원}",formattedPrice)
                 .replace("{0,000 원}",formattedPrice)
-                .replace("{예금주명}", show.getBankDepositorName() + " " + show.getBankName().name())
+                .replace("{예금주명}", show.getBankDepositorName() + " " + bankKoreanName)
                 .replace("{계좌번호}", show.getBankAccountNumber())
                 .replace("{예매_매수}", String.valueOf(reservation.getQuantity()))
                 .replace("{'000 님'}", user.getName())
@@ -85,7 +99,7 @@ public class SmsUtil {
                 .replace("{team_name}", show.getManager().getName())
                 .replace("{show_name}", show.getTitle())
                 .replace("{amount}", formattedPrice)
-                .replace("{account_holder}", show.getBankDepositorName() + " " + show.getBankName().name())
+                .replace("{account_holder}", show.getBankDepositorName() + " " + bankKoreanName)
                 .replace("{account_number}", show.getBankAccountNumber())
                 .replace("{ticket_count}", String.valueOf(reservation.getQuantity()))
                 .replace("{username}", user.getName())

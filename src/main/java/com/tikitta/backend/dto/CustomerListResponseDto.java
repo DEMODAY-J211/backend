@@ -11,6 +11,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CustomerListResponseDto {
+    private String showTitle;
     private List<ShowTimeInfo> showTimeList;
     private LocalDateTime selectedShowTime;
     private Long selectedShowTimeId;

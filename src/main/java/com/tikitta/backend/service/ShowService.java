@@ -152,6 +152,7 @@ public class ShowService {
 
         // 6. 최종 응답 DTO 생성 및 반환
         return new CustomerListResponseDto(
+                show.getTitle(),
                 showTimeInfoList,
                 selectedShowTime.getStartAt(),
                 selectedShowTime.getId(),
