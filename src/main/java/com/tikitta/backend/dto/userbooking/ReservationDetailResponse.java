@@ -56,7 +56,7 @@ public class ReservationDetailResponse {
         }
 
         // 좌석 리스트 또는 입장 번호 리스트 추출
-        if (show.getSaleMethod() == DomainEnums.SaleMethod.Select_by_User) {
+        if (show.getSaleMethod() == DomainEnums.SaleMethod.SELECTBYUSER) {
             // 좌석제: ReservationItem -> ShowSeat -> Seat -> seatNumber
             this.seatList = reservation.getReservationItems().stream()
                     .map(item -> item.getShowSeat().getSeat().getSeatNumber())

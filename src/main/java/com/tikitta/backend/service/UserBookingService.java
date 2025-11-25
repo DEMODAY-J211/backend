@@ -65,7 +65,7 @@ public class UserBookingService {
         );
 
         // 1. 좌석제-직접선택 공연일 경우 (새로운 모델 적용)
-        if (saleMethod == DomainEnums.SaleMethod.Select_by_User) {
+        if (saleMethod == DomainEnums.SaleMethod.SELECTBYUSER) {
             return showSeatRepository.countByShowTimeAndIsAvailable(showTime, true);
         }
 
@@ -174,7 +174,7 @@ public class UserBookingService {
         List<ReservationItem> items = new ArrayList<>();
 
         DomainEnums.SaleMethod saleMethod = show.getSaleMethod();
-        if (saleMethod == DomainEnums.SaleMethod.Select_by_User) {
+        if (saleMethod == DomainEnums.SaleMethod.SELECTBYUSER) {
             // ========== 좌석제 ==========
             List<Long> showSeatIds = sessionDto.getSelectedShowSeatIds();
             if (showSeatIds == null || showSeatIds.isEmpty()) {
@@ -262,7 +262,7 @@ public class UserBookingService {
             case Event_Host -> "EH";
             case SCHEDULING -> "SD";
             case STANDING -> "ST";
-            case Select_by_User -> "US";
+            case SELECTBYUSER -> "US";
             default -> "XX";
         };
 
@@ -315,7 +315,7 @@ public class UserBookingService {
         });
 
         // --- 좌석제 공연 (Select_by_User) ---
-        if (reservation.getShowTime().getShow().getSaleMethod() == DomainEnums.SaleMethod.Select_by_User) {
+        if (reservation.getShowTime().getShow().getSaleMethod() == DomainEnums.SaleMethod.SELECTBYUSER) {
             reservation.getReservationItems().forEach(item -> {
                 ShowSeat ss = item.getShowSeat();
                 if (ss != null) {
@@ -420,7 +420,7 @@ public class UserBookingService {
         }
 
         Shows show = reservation.getShowTime().getShow();
-        if (show.getSaleMethod() != DomainEnums.SaleMethod.Select_by_User) {
+        if (show.getSaleMethod() != DomainEnums.SaleMethod.SELECTBYUSER) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "좌석제 공연에서만 좌석 변경이 가능합니다.");
         }
 

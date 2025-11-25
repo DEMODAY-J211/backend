@@ -108,7 +108,7 @@ public class BookingDto {
             this.managerDepositorName = show.getBankDepositorName();
 
             // ⬇ 좌석제일 때만 선택한 좌석 seatTable 목록 셋팅
-            if (show.getSaleMethod() == DomainEnums.SaleMethod.Select_by_User) {
+            if (show.getSaleMethod() == DomainEnums.SaleMethod.SELECTBYUSER) {
                 this.selectedSeats = sessionDto.getSelectedSeatTables();
             }
         }

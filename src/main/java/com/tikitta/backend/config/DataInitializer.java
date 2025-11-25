@@ -131,7 +131,7 @@ public class DataInitializer implements CommandLineRunner {
                 .bankName(DomainEnums.Bank.TOSS)
                 .bankAccountNumber("1000-0000-0000")
                 .bankDepositorName("티키타엔터")
-                .saleMethod(DomainEnums.SaleMethod.Select_by_User) // 유저가 좌석 선택
+                .saleMethod(DomainEnums.SaleMethod.SELECTBYUSER) // 유저가 좌석 선택
                 .status(DomainEnums.ShowStatus.PUBLISHED)
                 .build();
         showsRepository.save(seatedShow);
