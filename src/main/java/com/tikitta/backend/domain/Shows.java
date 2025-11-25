@@ -79,6 +79,9 @@ public class Shows {
     @OneToMany(mappedBy = "show", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TicketOption> ticketOptions = new ArrayList<>();
 
+    @OneToOne(mappedBy = "show", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private Message message;
+
     @Builder
     public Shows(Manager manager, Location location, String title, String posterUrl, LocalDateTime bookingStartAt, String bankDepositorName, DomainEnums.Bank bankName, String bankAccountNumber, String detailText, DomainEnums.SaleMethod saleMethod, DomainEnums.ShowStatus status, String reviewUrl, String userLink) {
         this.manager = manager;
