@@ -25,6 +25,7 @@ public class ShowDetailResponse {
     private String showDetailText;
     private LocalDateTime bookingStartAt;
     private String saleMethod;
+    private List<String> detailImageUrls;
 
     public ShowDetailResponse(Shows show){
         this.showId = show.getId();
@@ -34,6 +35,7 @@ public class ShowDetailResponse {
         this.showDetailText = show.getDetailText();
         this.bookingStartAt = show.getBookingStartAt();
         this.saleMethod = show.getSaleMethod().name();
+        this.detailImageUrls = show.getDetailImageUrls();
 
 
         ShowTime earliest = show.getShowTimes().stream()
