@@ -66,7 +66,7 @@ public class SmsUtil {
         String formattedShowTime = showTime.getStartAt().format(formatter);
 
         return template
-               /* .replace("{단체명}", show.getManager().getName())
+                .replace("{단체명}", show.getManager().getName())
                 .replace("{공연명}", show.getTitle())
                 .replace("{'0,000 원'}", formattedPrice)
                 .replace("{예금주명}", show.getBankDepositorName() + " " + show.getBankName().name())
@@ -74,7 +74,7 @@ public class SmsUtil {
                 .replace("{예매_매수}", String.valueOf(reservation.getQuantity()))
                 .replace("{'000 님'}", user.getName())
                 .replace("{공연일시}", formattedShowTime)
-                .replace("{관람장소}", show.getLocation().getAddress());*/
+                .replace("{관람장소}", show.getLocation().getAddress())
                 .replace("{team_name}", show.getManager().getName())
                 .replace("{show_name}", show.getTitle())
                 .replace("{amount}", formattedPrice)
