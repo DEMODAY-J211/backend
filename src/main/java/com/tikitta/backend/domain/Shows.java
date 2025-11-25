@@ -55,7 +55,7 @@ public class Shows {
     private String detailText;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "show_sale_method")
+    @Column(name = "show_sale_method", length = 20)
     private DomainEnums.SaleMethod saleMethod;
 
     @Enumerated(EnumType.STRING)
