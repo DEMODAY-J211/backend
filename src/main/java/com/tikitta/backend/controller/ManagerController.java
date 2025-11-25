@@ -20,6 +20,7 @@ import java.util.LinkedHashMap;
 
 import com.tikitta.backend.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -34,6 +35,9 @@ import java.util.Map;
 @RequestMapping("/manager")
 @RequiredArgsConstructor
 public class ManagerController {
+
+    @Value("${frontend-url}")
+    private String frontendUrl;
 
     private final KakaoOauthRepository kakaoOauthRepository;
     private final ManagerRepository managerRepository;
@@ -72,7 +76,7 @@ public class ManagerController {
                 .orElseThrow(() -> new RuntimeException("로그인된 Oauth 정보를 찾을 수 없습니다."));
         Manager manager = managerRepository.findByKakaoOauth(kakaoOauth)
                 .orElseThrow(() -> new RuntimeException("매니저 정보를 찾을 수 없습니다. (매니저 회원가입이 완료되지 않았을 수 있습니다)"));
-        String managerLink = "user/" + manager.getId() + "/main";
+        String managerLink = frontendUrl + manager.getId() + "/homeuser";
         return ResponseEntity.ok(managerLink);
     }
 
