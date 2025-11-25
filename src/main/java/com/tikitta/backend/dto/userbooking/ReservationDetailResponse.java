@@ -64,7 +64,7 @@ public class ReservationDetailResponse {
         } else {
             // 스탠딩/기타: ReservationItem -> entryNumber
             this.seatList = reservation.getReservationItems().stream()
-                    .map(item -> "입장번호 " + item.getEntryNumber())
+                    .map(item -> " " + item.getEntryNumber())
                     .collect(Collectors.toList());
         }
 
