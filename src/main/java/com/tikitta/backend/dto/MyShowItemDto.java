@@ -1,23 +1,46 @@
 package com.tikitta.backend.dto;
 
 import com.tikitta.backend.domain.Shows;
+import com.tikitta.backend.domain.ShowTime;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 public class MyShowItemDto {
-    private Long showId; // 필드 이름을 showId로 변경
+    private Long showId;
     private String title;
     private String poster;
+    private List<ShowTimeDto> showTimeList;
 
     public static MyShowItemDto fromEntity(Shows show) {
+        List<ShowTimeDto> showTimeDtoList = show.getShowTimes().stream()
+                .map(ShowTimeDto::fromEntity)
+                .collect(Collectors.toList());
+
         return new MyShowItemDto(
-                show.getId(), // Shows 엔티티의 ID를 showId에 매핑
+                show.getId(),
                 show.getTitle(),
-                show.getPosterUrl()
+                show.getPosterUrl(),
+                showTimeDtoList
         );
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ShowTimeDto {
+        private Long showTimeId;
+        private LocalDateTime showTime;
+
+        public static ShowTimeDto fromEntity(ShowTime showTime) {
+            return new ShowTimeDto(showTime.getId(), showTime.getStartAt());
+        }
     }
 }
