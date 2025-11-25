@@ -61,20 +61,10 @@ public class ManagerController {
 
     // ManagerController.java
     @GetMapping("/link")
-    public ResponseEntity<String> getManagerLink(Authentication authentication) {
-        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-
-        Map<String, Object> attributes = oAuth2User.getAttributes();
-        Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
-        String email = (String) kakaoAccount.get("email");
-
-        if (email == null) {
-            throw new RuntimeException("로그인된 Oauth 정보를 찾을 수 없습니다. (이메일 없음)");
-        }
-
-        KakaoOauth kakaoOauth = kakaoOauthRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("로그인된 Oauth 정보를 찾을 수 없습니다."));
-        Manager manager = managerRepository.findByKakaoOauth(kakaoOauth)
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<String> getManagerLink() {
+        KakaoOauth user = authUtil.getCurrentUser();
+        Manager manager = managerRepository.findByKakaoOauth(user)
                 .orElseThrow(() -> new RuntimeException("매니저 정보를 찾을 수 없습니다. (매니저 회원가입이 완료되지 않았을 수 있습니다)"));
         String managerLink = frontendUrl + manager.getId() + "/homeuser";
         return ResponseEntity.ok(managerLink);
