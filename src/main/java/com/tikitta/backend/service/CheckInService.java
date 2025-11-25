@@ -17,9 +17,8 @@ public class CheckInService {
     private final ReservationItemRepository reservationItemRepository;
 
     @Transactional
-    public QrReadResponseDto checkInWithQrCode(Long showtimeId, String qrCodeContent) {
+    public QrReadResponseDto checkInWithQrCode(Long showtimeId, Long reservationItemId) {
         // 1. QR 코드 내용으로 ReservationItem 조회
-        long reservationItemId = Long.parseLong(qrCodeContent);
         ReservationItem item = reservationItemRepository.findById(reservationItemId)
                 .orElseThrow(() -> new CustomException(ErrorCode.QR_NOT_FOUND));
 

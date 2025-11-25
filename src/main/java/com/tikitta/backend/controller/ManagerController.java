@@ -133,9 +133,9 @@ public class ManagerController {
     public ResponseEntity<Object> checkInByQrCode(
             @PathVariable Long showId,
             @RequestParam("showtimeId") Long showtimeId,
-            @RequestParam("code") String qrCode) {
+            @RequestParam("reservationItemId") Long reservationItemId) {
 
-        QrReadResponseDto responseDto = checkInService.checkInWithQrCode(showtimeId, qrCode);
+        QrReadResponseDto responseDto = checkInService.checkInWithQrCode(showtimeId, reservationItemId);
 
         return ResponseEntity.ok(Map.of(
                 "success", true,
