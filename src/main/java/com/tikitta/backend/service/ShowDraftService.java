@@ -364,24 +364,29 @@ public class ShowDraftService {
         Manager manager = managerRepository.findByKakaoOauth(user)
                 .orElseThrow(() -> new IllegalArgumentException("매니저 정보를 찾을 수 없습니다."));
 
-        Shows draft = showsRepository.findByManagerAndStatus(manager, DomainEnums.ShowStatus.DRAFT)
-                .orElseThrow(() -> new IllegalArgumentException("삭제할 임시저장 공연이 없습니다."));
+        List<Shows> drafts = showsRepository.findByManagerAndStatus(manager, DomainEnums.ShowStatus.DRAFT);
 
-        // 포스터 삭제
-        if (draft.getPosterUrl() != null && !draft.getPosterUrl().isBlank()) {
-            imageService.delete(draft.getPosterUrl());
+        if (drafts.isEmpty()) {
+            throw new IllegalArgumentException("삭제할 임시저장 공연이 없습니다.");
         }
 
-        // 상세 이미지 삭제
-        if (draft.getDetailImageUrls() != null) {
-            draft.getDetailImageUrls().forEach(imageService::delete);
+        for (Shows draft : drafts) {
+            // 포스터 삭제
+            if (draft.getPosterUrl() != null && !draft.getPosterUrl().isBlank()) {
+                imageService.delete(draft.getPosterUrl());
+            }
+
+            // 상세 이미지 삭제
+            if (draft.getDetailImageUrls() != null) {
+                draft.getDetailImageUrls().forEach(imageService::delete);
+            }
         }
+
         // 3. 공연 삭제
-        // (Shows에 Cascade/orphanRemoval이 잘 설정되어 있다면
-        showsRepository.delete(draft);
+        showsRepository.deleteAll(drafts);
 
-        // 4. API 명세에 따라 { "deletedCount": 1 } 반환
-        return new ShowDraftDeleteResponse(1);
+        // 4. API 명세에 따라 { "deletedCount": N } 반환
+        return new ShowDraftDeleteResponse(drafts.size());
     }
 
     private void updatePoster(Shows draft, String newPosterUrl) {
