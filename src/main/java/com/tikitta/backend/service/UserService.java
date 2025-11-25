@@ -29,7 +29,9 @@ public class UserService {
         Manager manager = managerRepository.findById(managerId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 매니저입니다. ID: " + managerId));
 
-        List<Shows> showsList = showsRepository.findByManager(manager);
+        List<Shows> showsList = showsRepository.findByManager(manager).stream()
+                .filter(show -> show.getStatus() == DomainEnums.ShowStatus.PUBLISHED)
+                .collect(Collectors.toList());
 
         List<ShowItemDto> showItemList = showsList.stream()
                 .map(ShowItemDto::new)
@@ -99,7 +101,10 @@ public class UserService {
 
         Manager manager = managerRepository.findById(managerId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 매니저입니다. ID: " + managerId));
-        List<Shows> showsList = showsRepository.findByManager(manager);
+
+        List<Shows> showsList = showsRepository.findByManager(manager).stream()
+                .filter(show -> show.getStatus() == DomainEnums.ShowStatus.PUBLISHED) // 여기 추가!
+                .collect(Collectors.toList());
 
         List<Long> reservedShowIds = reservationRepository.findReservedShowIdsByUserEmail(userEmail);
 
