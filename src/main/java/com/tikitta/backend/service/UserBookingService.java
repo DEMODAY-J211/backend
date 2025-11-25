@@ -259,7 +259,7 @@ public class UserBookingService {
      */
     private String generateReservationNumber(DomainEnums.SaleMethod saleMethod, KakaoOauth user) {
         String prefix = switch (saleMethod) {
-            case Event_Host -> "EH";
+            case EVENTHOST -> "EH";
             case SCHEDULING -> "SD";
             case STANDING -> "ST";
             case SELECTBYUSER -> "US";
