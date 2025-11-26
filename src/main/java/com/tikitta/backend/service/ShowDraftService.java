@@ -94,16 +94,16 @@ public class ShowDraftService {
     }
 
     private void updateBasicFields(Shows draft, ShowUpdateRequest request){
-        if(request.getTitle()!= null) draft.setTitle(request.getTitle());
-        if(request.getPoster() != null)
+        if(request.getTitle()!= null && !request.getTitle().isBlank()) draft.setTitle(request.getTitle());
+        if(request.getPoster() != null && !request.getPoster().isBlank())
             updatePoster(draft, request.getPoster());
         if(request.getBookStart() != null) draft.setBookingStartAt(request.getBookStart());
-        if(request.getBankMaster() != null) draft.setBankDepositorName(request.getBankMaster());
-        if (request.getBankName() != null)
+        if(request.getBankMaster() != null && !request.getBankMaster().isBlank()) draft.setBankDepositorName(request.getBankMaster());
+        if (request.getBankName() != null && !request.getBankName().isBlank())
             draft.setBankName(DomainEnums.Bank.valueOf(request.getBankName()));
-        if(request.getBankAccount()!=null) draft.setBankAccountNumber(request.getBankAccount());
-        if(request.getDetailText() != null) draft.setDetailText(request.getDetailText());
-        if (request.getSeatType() != null)
+        if(request.getBankAccount()!=null && !request.getBankAccount().isBlank()) draft.setBankAccountNumber(request.getBankAccount());
+        if(request.getDetailText() != null && !request.getDetailText().isBlank()) draft.setDetailText(request.getDetailText());
+        if (request.getSeatType() != null && !request.getSeatType().isBlank())
             draft.setSaleMethod(DomainEnums.SaleMethod.valueOf(request.getSeatType()));
         if (request.getSeatCount() != null) {
             draft.setSeatCount(request.getSeatCount());
@@ -113,7 +113,7 @@ public class ShowDraftService {
             }
         }
 
-        if (request.getReviewUrl() != null) draft.setReviewUrl(request.getReviewUrl());
+        if (request.getReviewUrl() != null && !request.getReviewUrl().isBlank()) draft.setReviewUrl(request.getReviewUrl());
 
     }
 
