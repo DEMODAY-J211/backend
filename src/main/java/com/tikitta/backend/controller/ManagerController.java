@@ -214,7 +214,7 @@ public class ManagerController {
     }
 //------등록된 공연 수정------//
 
-    @GetMapping("shows/{showId}/edit")
+    @GetMapping("/shows/{showId}/edit")
     public ResponseEntity<ApiResponse<ShowDraftResponse>> getShow(
             @PathVariable Long showId
     ){
