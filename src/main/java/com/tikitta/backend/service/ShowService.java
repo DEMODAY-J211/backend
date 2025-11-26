@@ -331,18 +331,22 @@ public class ShowService {
     }
 
     private void createOnSiteReservation(ShowSeat showSeat, CheckinStatusUpdateRequest.CheckinStatusUpdateItem item, Manager manager, ShowTime showTime) {
+        log.info("Attempting to create on-site reservation for seat: {}", item.getSeat());
+
         if (Boolean.FALSE.equals(item.getIsReserved())) {
-            // 빈 좌석을 '미예약' 상태로 만드는 것은 아무 작업도 하지 않음
+            log.info("Seat {} is requested to be not reserved. No action needed for an empty seat.", item.getSeat());
             return;
         }
 
-        // 현장 예매 생성
+        log.info("Finding ticket option for the show...");
         TicketOption ticketOption = showTime.getShow().getTicketOptions().stream().findFirst()
                 .orElseThrow(() -> new IllegalStateException("해당 공연에 티켓 옵션이 없습니다."));
+        log.info("Found ticket option: '{}' with price: {}", ticketOption.getName(), ticketOption.getPrice());
 
+        log.info("Building new Reservation entity for on-site sale...");
         Reservation newReservation = Reservation.builder()
                 .reservationNumber(UUID.randomUUID().toString())
-                .user(manager.getKakaoOauth()) // 예매자를 매니저로 설정
+                .user(manager.getKakaoOauth())
                 .showTime(showTime)
                 .ticketOption(ticketOption)
                 .quantity(1)
@@ -353,7 +357,9 @@ public class ShowService {
                 .createdAt(LocalDateTime.now())
                 .build();
         reservationRepository.save(newReservation);
+        log.info("Saved new Reservation with ID: {}", newReservation.getId());
 
+        log.info("Building new ReservationItem entity...");
         ReservationItem newReservationItem = ReservationItem.builder()
                 .reservation(newReservation)
                 .showSeat(showSeat)
@@ -361,10 +367,12 @@ public class ShowService {
                 .build();
 
         if (Boolean.TRUE.equals(item.getIsEntered())) {
+            log.info("Check-in requested for new on-site reservation.");
             newReservationItem.checkIn();
         }
 
         reservationItemRepository.save(newReservationItem);
+        log.info("Successfully saved new ReservationItem with ID: {} for seat: {}", newReservationItem.getId(), item.getSeat());
     }
 
 
