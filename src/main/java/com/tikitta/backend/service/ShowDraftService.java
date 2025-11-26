@@ -132,6 +132,9 @@ public class ShowDraftService {
 
         // 회차 다시 생성
         for (var dto : items) {
+            if (dto.getShowStart() == null || dto.getShowEnd() == null) {
+                continue; // 필수 시간 정보가 없으면 건너뜁니다.
+            }
             LocalDateTime bookingEndAt = dto.getShowStart().minusHours(1);
 
             Long seatCount = request.getSeatCount();
@@ -165,14 +168,16 @@ public class ShowDraftService {
         draft.getTicketOptions().clear();
 
         for(var dto:items){
-            TicketOption option = TicketOption.builder()
-                    .show(draft)
-                    .name(dto.getName())
-                    .description(dto.getDescription())
-                    .price(dto.getPrice())
-                    .build();
+            if (dto.getName() != null && !dto.getName().isBlank() && dto.getPrice() != null) {
+                TicketOption option = TicketOption.builder()
+                        .show(draft)
+                        .name(dto.getName())
+                        .description(dto.getDescription())
+                        .price(dto.getPrice())
+                        .build();
 
-            draft.getTicketOptions().add(option);
+                draft.getTicketOptions().add(option);
+            }
         }
     }
 
@@ -180,21 +185,21 @@ public class ShowDraftService {
         Message message = messageRepository.findByShow(draft)
                 .orElse(Message.builder().show(draft).build());
 
-        if (dto.getPayGuide() != null) {
+        if (dto.getPayGuide() != null && !dto.getPayGuide().isBlank()) {
             message.setPaymentGuide(dto.getPayGuide());
         }
-        if (dto.getBookConfirm() != null) {
+        if (dto.getBookConfirm() != null && !dto.getBookConfirm().isBlank()) {
             message.setBookingConfirmation(dto.getBookConfirm());
         }
-        if (dto.getShowGuide() != null) {
+        if (dto.getShowGuide() != null && !dto.getShowGuide().isBlank()) {
             message.setShowGuide(dto.getShowGuide());
         }
 
-        if(dto.getReviewRequest() != null){
+        if(dto.getReviewRequest() != null && !dto.getReviewRequest().isBlank()){
             message.setReviewRequest(dto.getReviewRequest());
         }
 
-        if (dto.getReviewUrl() != null) {
+        if (dto.getReviewUrl() != null && !dto.getReviewUrl().isBlank()) {
             draft.setReviewUrl(dto.getReviewUrl());
         }
 
