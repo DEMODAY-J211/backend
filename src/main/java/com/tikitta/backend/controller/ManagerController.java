@@ -155,10 +155,9 @@ public class ManagerController {
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<ApiResponse<CheckinStatusUpdateResponse>> updateCheckinStatus(
             @PathVariable Long showId,
-            @RequestParam Long showtimeId,
             @RequestBody CheckinStatusUpdateRequest request
     ){
-        CheckinStatusUpdateResponse response=showService.updateCheckinStatus(showId,showtimeId,request);
+        CheckinStatusUpdateResponse response=showService.updateCheckinStatus(showId, request);
 
         if (response.getFailedIds().isEmpty()) {
             return ResponseEntity.ok(new ApiResponse<>(200, "실패없이 모두 업데이트되었습니다.", response));

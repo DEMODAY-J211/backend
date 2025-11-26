@@ -263,102 +263,110 @@ public class ShowService {
     }
 
     @Transactional
-    public CheckinStatusUpdateResponse updateCheckinStatus(Long showId, Long showtimeId, CheckinStatusUpdateRequest request){
-        KakaoOauth user=authUtil.getCurrentUser();
-
-        // 매니저 조회
+    public CheckinStatusUpdateResponse updateCheckinStatus(Long showId, CheckinStatusUpdateRequest request) {
+        KakaoOauth user = authUtil.getCurrentUser();
         Manager manager = managerRepository.findByKakaoOauth(user)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사용자의 매니저 정보를 찾을 수 없습니다."));
 
-        Shows show = showsRepository.findById(showId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 공연입니다."));
-//        if (!show.getManager().getId().equals(manager.getId())) {
-//            throw new AccessDeniedException("해당 공연에 대한 접근 권한이 없습니다.");
-//        }
-
-        //회차 검증
-        ShowTime showTime = showTimeRepository.findById(showtimeId).orElseThrow(()-> new IllegalArgumentException("존재하지 않은 회차의 ID입니다."));
+        Long showtimeId = request.getShowtimeId();
+        ShowTime showTime = showTimeRepository.findById(showtimeId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회차 ID입니다: " + showtimeId));
 
         if (!showTime.getShow().getId().equals(showId)) {
-            throw new IllegalArgumentException("회차가 해당 공연에 속하지 않습니다.");
+            throw new AccessDeniedException("회차가 해당 공연에 속하지 않습니다.");
         }
 
-        //좌석 상태 변경 로직 수행(isReserved, isEntered 수정)
-        int updatedCount =0;
+        int updatedCount = 0;
         List<Long> failedIds = new ArrayList<>();
 
-        for (CheckinStatusUpdateRequest.CheckinStatusUpdateItem item :  request.getCheckinStatusUpdateRequest()){
+        for (CheckinStatusUpdateRequest.CheckinStatusUpdateItem item : request.getCheckinStatusUpdateRequest()) {
             try {
-                ReservationItem reservationItem = reservationItemRepository.findById(item.getReservationItemId())
-                        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 예매 항목입니다."));
+                ShowSeat showSeat = showSeatRepository.findByShowTimeIdAndSeat_SeatNumber(showtimeId, item.getSeat())
+                        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 좌석입니다: " + item.getSeat()));
 
-                //좌석 취소
-                if (Boolean.FALSE.equals(item.getIsReserved())) {
-                    reservationItem.setEntered(false);
-                    reservationItem.getReservation().setStatus(DomainEnums.ReservationStatus.CANCELED);
+                Optional<ReservationItem> reservationItemOpt = reservationItemRepository.findByShowSeat(showSeat);
+
+                if (reservationItemOpt.isPresent()) {
+                    // 기존 예매 건 업데이트
+                    updateExistingReservationItem(reservationItemOpt.get(), item);
+                } else {
+                    // 현장 예매 건 생성
+                    createOnSiteReservation(showSeat, item, manager, showTime);
                 }
-
-                //현장 예매 생성 & 입장 처리
-                else if (Boolean.TRUE.equals(item.getIsReserved())&&item.getReservationItemId() == null) {
-                    if (show.getTicketOptions().isEmpty()) {
-                        throw new IllegalStateException("해당 공연에 티켓 옵션이 없습니다.");
-                    }
-                    TicketOption ticketOption = show.getTicketOptions().get(0);
-
-                    //새로운 reservation 생성
-                    Reservation newReservation = Reservation.builder()
-                            .reservationNumber(UUID.randomUUID().toString())
-                            .user(manager.getKakaoOauth())
-                            .showTime(showTime)
-                            .ticketOption(ticketOption)
-                            .quantity(1)
-                            .totalPrice(ticketOption.getPrice())
-                            .refundAccountNumber("현장 예매")
-                            .phone("000-0000-0000")
-                            .status(DomainEnums.ReservationStatus.CONFIRMED)
-                            .createdAt(LocalDateTime.now())
-                            .build();
-                    reservationRepository.save(newReservation);
-
-                    //reservationItem 생성
-                    ReservationItem newItem;
-                    if(item.getShowSeatId()!=null) { //좌석제
-                        ShowSeat showSeat = showSeatRepository.findById(item.getShowSeatId())
-                                .orElseThrow(()-> new IllegalArgumentException("좌석 정보를 찾을 수 없습니다."));
-                        newItem = ReservationItem.builder()
-                                .reservation(newReservation)
-                                .showSeat(showSeat)
-                                .build();
-                    }
-                    else{//스탠딩
-                        newItem=ReservationItem.builder()
-                                .reservation(newReservation)
-                                .entryNumber(item.getEntryNumber())
-                                .build();
-                    }
-                    newItem.checkIn(); //입장 처리
-                    reservationItemRepository.save(newItem);
-                }
-
-                //입장 상태만 수정
-                else if(item.getIsEntered()!=null && item.getReservationItemId() !=null){
-                    ReservationItem reservationItem2 = reservationItemRepository.findById(item.getReservationItemId())
-                            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 예매 항목입니다."));
-                    reservationItem2.setEntered(item.getIsEntered());
-                }
-
                 updatedCount++;
-
-            } catch (Exception e){
-                failedIds.add(item.getReservationItemId());
+            } catch (Exception e) {
+                log.error("Check-in status update failed for seat: {}", item.getSeat(), e);
+                // 실패 ID를 좌석 ID로 기록 (reservationItemId가 없으므로)
+                // 실제로는 좌석 번호를 반환하는 것이 더 유용할 수 있음
+                failedIds.add(-1L); // 임시로 -1을 추가
             }
         }
 
-        return CheckinStatusUpdateResponse.builder()
-                .updatedCount(updatedCount)
-                .failedIds(failedIds)
-                .build();
+        return new CheckinStatusUpdateResponse(updatedCount, failedIds);
     }
+
+    private void updateExistingReservationItem(ReservationItem reservationItem, CheckinStatusUpdateRequest.CheckinStatusUpdateItem item) {
+        Reservation reservation = reservationItem.getReservation();
+
+        // isReserved 상태에 따라 예매 상태 변경
+        if (Boolean.FALSE.equals(item.getIsReserved())) {
+            reservation.setStatus(DomainEnums.ReservationStatus.CANCELED);
+            reservationItem.setEntered(false); // 취소 시 입장 상태 초기화
+        } else if (Boolean.TRUE.equals(item.getIsReserved())) {
+            // 이미 예매된 상태이므로 특별한 처리는 불필요. 필요 시 CONFIRMED로 강제할 수 있음.
+            if(reservation.getStatus() != DomainEnums.ReservationStatus.CONFIRMED) {
+                reservation.setStatus(DomainEnums.ReservationStatus.CONFIRMED);
+            }
+        }
+
+        // isEntered 상태 변경
+        if (item.getIsEntered() != null && reservation.getStatus() == DomainEnums.ReservationStatus.CONFIRMED) {
+            if (item.getIsEntered() && !reservationItem.isEntered()) {
+                reservationItem.checkIn();
+            } else if (!item.getIsEntered()) {
+                reservationItem.setEntered(false);
+                reservationItem.setEnteredAt(null);
+            }
+        }
+    }
+
+    private void createOnSiteReservation(ShowSeat showSeat, CheckinStatusUpdateRequest.CheckinStatusUpdateItem item, Manager manager, ShowTime showTime) {
+        if (Boolean.FALSE.equals(item.getIsReserved())) {
+            // 빈 좌석을 '미예약' 상태로 만드는 것은 아무 작업도 하지 않음
+            return;
+        }
+
+        // 현장 예매 생성
+        TicketOption ticketOption = showTime.getShow().getTicketOptions().stream().findFirst()
+                .orElseThrow(() -> new IllegalStateException("해당 공연에 티켓 옵션이 없습니다."));
+
+        Reservation newReservation = Reservation.builder()
+                .reservationNumber(UUID.randomUUID().toString())
+                .user(manager.getKakaoOauth()) // 예매자를 매니저로 설정
+                .showTime(showTime)
+                .ticketOption(ticketOption)
+                .quantity(1)
+                .totalPrice(ticketOption.getPrice())
+                .refundAccountNumber("현장 예매")
+                .phone("000-0000-0000")
+                .status(DomainEnums.ReservationStatus.CONFIRMED)
+                .createdAt(LocalDateTime.now())
+                .build();
+        reservationRepository.save(newReservation);
+
+        ReservationItem newReservationItem = ReservationItem.builder()
+                .reservation(newReservation)
+                .showSeat(showSeat)
+                .status(DomainEnums.ReservationStatus.CONFIRMED)
+                .build();
+
+        if (Boolean.TRUE.equals(item.getIsEntered())) {
+            newReservationItem.checkIn();
+        }
+
+        reservationItemRepository.save(newReservationItem);
+    }
+
 
     public ShowDraftResponse getPublishShow(Long showId){
         KakaoOauth user=authUtil.getCurrentUser();

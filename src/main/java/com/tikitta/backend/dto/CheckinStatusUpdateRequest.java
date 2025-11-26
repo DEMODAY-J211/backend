@@ -14,6 +14,8 @@ import java.util.List;
 @AllArgsConstructor
 public class CheckinStatusUpdateRequest {
 
+    private Long showtimeId;
+
     @Builder.Default
     private List<CheckinStatusUpdateItem> checkinStatusUpdateRequest = new ArrayList<>();
 
@@ -22,10 +24,8 @@ public class CheckinStatusUpdateRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class CheckinStatusUpdateItem {
-        private Long reservationItemId;
+        private String seat;
         private Boolean isReserved;
         private Boolean isEntered;
-        private Long showSeatId;
-        private Integer entryNumber;
     }
 }

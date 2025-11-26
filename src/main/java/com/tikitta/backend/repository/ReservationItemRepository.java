@@ -3,8 +3,10 @@ package com.tikitta.backend.repository;
 import com.tikitta.backend.domain.DomainEnums;
 import com.tikitta.backend.domain.Reservation;
 import com.tikitta.backend.domain.ReservationItem;
+import com.tikitta.backend.domain.ShowSeat;
 import com.tikitta.backend.domain.ShowTime;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -48,4 +50,6 @@ public interface ReservationItemRepository extends JpaRepository<ReservationItem
     List<ReservationItem> findReservationItemsByShowTimeAndKeyword(
             @Param("showTime") ShowTime showTime,
             @Param("keyword") String keyword);
+
+    Optional<ReservationItem> findByShowSeat(ShowSeat showSeat);
 }

@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ShowSeatRepository extends JpaRepository<ShowSeat,Long> {
     int countByShowTimeAndIsAvailable(ShowTime showTime, boolean isAvailable);
@@ -34,4 +35,6 @@ public interface ShowSeatRepository extends JpaRepository<ShowSeat,Long> {
 
     @Modifying
     void deleteBySeat_Location_IdAndShowTimeIsNull(Long locationId);
+
+    Optional<ShowSeat> findByShowTimeIdAndSeat_SeatNumber(Long showTimeId, String seatNumber);
 }
