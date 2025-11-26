@@ -41,6 +41,7 @@ public class ShowService {
     private final MessageRepository messageRepository;
     private final LocationMapRepository locationMapRepository;
     private final SmsUtil smsUtil;
+    private final ImageService imageService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
 
@@ -444,6 +445,7 @@ public class ShowService {
                 .build();
     }
 
+    @Transactional
     public ShowUpdateResponse updatePublishedShow(Long showId, ShowPublishUpdateRequest request){
 
         KakaoOauth user=authUtil.getCurrentUser();
@@ -458,12 +460,21 @@ public class ShowService {
         }
 
         if (request.getDetailImages() != null) {
+            List<String> oldImageUrls = new ArrayList<>(show.getDetailImageUrls());
+            List<String> newImageUrls = request.getDetailImages();
+
+            // Delete images that are in oldImageUrls but not in newImageUrls
+            oldImageUrls.stream()
+                .filter(url -> !newImageUrls.contains(url))
+                .forEach(imageService::delete);
+
             show.getDetailImageUrls().clear();
-            show.getDetailImageUrls().addAll(request.getDetailImages());
+            show.getDetailImageUrls().addAll(newImageUrls);
         }
 
         if (request.getDetailText() != null) {
             show.setDetailText(request.getDetailText());
+            log.info("공연 ID {}의 detailText가 업데이트되었습니다.", showId);
         }
 
         return new ShowUpdateResponse(show.getId(), show.getStatus().name());

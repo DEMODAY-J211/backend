@@ -43,7 +43,7 @@ server:
         http-only: true
         secure: true
 frontend-url: https://localhost:5173/
-#fro
+#frontend-url: https://tikitta.vercel.app/
 cloud:
   aws:
     credentials:
