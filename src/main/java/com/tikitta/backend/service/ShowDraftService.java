@@ -283,10 +283,9 @@ public class ShowDraftService {
         Message msg = messageRepository.findByShow(draft)
                 .orElseThrow(() -> new IllegalStateException("메시지 정보를 입력해야 합니다."));
 
-        if (msg.getPaymentGuide() == null || msg.getPaymentGuide().isBlank()
-                || msg.getBookingConfirmation() == null || msg.getBookingConfirmation().isBlank()
+        if (msg.getBookingConfirmation() == null || msg.getBookingConfirmation().isBlank()
                 || msg.getShowGuide() == null || msg.getShowGuide().isBlank()) {
-            throw new IllegalStateException("입금 안내, 예매 확정, 공연 안내 메시지는 필수입니다.");
+            throw new IllegalStateException("예매 확정, 공연 안내 메시지는 필수입니다.");
         }
     }
 
