@@ -143,10 +143,10 @@ public class ManagerController {
     //좌석별 조회
     @GetMapping("/shows/{showId}/checkin")
     @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<ApiResponse<CheckinListResponse>> getShowSeats(
+    public ResponseEntity<ApiResponse<CheckinResponse>> getShowSeats(
             @PathVariable Long showId,
             @RequestParam(required = false) Long showtimeId){
-        CheckinListResponse response = showService.getCheckinList(showId, showtimeId);
+        CheckinResponse response = showService.getCheckinList(showId, showtimeId);
         return ResponseEntity.ok(new ApiResponse<>(response));
     }
 
@@ -168,6 +168,7 @@ public class ManagerController {
         }
     }
 
+    /*
     @GetMapping("/shows/{showId}/checkin/search")
     public ResponseEntity<ApiResponse<CheckinResponse>> getReservationSeatList(
             @PathVariable("showId") Long showId,
@@ -177,6 +178,7 @@ public class ManagerController {
         CheckinResponse response = showService.getReservationSeatList(showId, showtimeId, keyword);
         return ResponseEntity.ok(new ApiResponse<>(response));
     }
+    */
 
     @GetMapping("/shows/venues")
     @PreAuthorize("hasRole('MANAGER')")

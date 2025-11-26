@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -12,6 +13,10 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CheckinResponse {
+    private String showTitle;
+    private List<CheckinShowTimeDto> showTimeList;
+    private LocalDateTime selectedShowTime;
+    private Long selectedShowTimeId;
     private List<List<Object>> seat;
-    private List<ReservationSeatListResponse> reservation;
+    private List<CheckinReservationDto> reservation;
 }

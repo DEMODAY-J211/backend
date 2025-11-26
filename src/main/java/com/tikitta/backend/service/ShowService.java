@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tikitta.backend.domain.*;
 import com.tikitta.backend.dto.*;
-import com.tikitta.backend.dto.ReservationDetailDto;
 import com.tikitta.backend.repository.*;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -263,53 +262,6 @@ public class ShowService {
         }
     }
 
-    //좌석별 조회
-    @Transactional(readOnly = true)
-    public List<ReservationSeatListResponse> getReservationSeatList(Long showtimeId) {
-        // 1. 매니저 인증
-        KakaoOauth user=authUtil.getCurrentUser();
-
-        // 2. 매니저 조회
-        Manager manager = managerRepository.findByKakaoOauth(user)
-                .orElseThrow(() -> new IllegalArgumentException("해당 사용자의 매니저 정보를 찾을 수 없습니다."));
-
-        // 3. 공연 소유권 체크
-        ShowTime showTime = showTimeRepository.findById(showtimeId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회차 ID입니다: " + showtimeId));
-
-//        if (!showTime.getShow().getManager().getId().equals(manager.getId())) {
-//            throw new AccessDeniedException("해당 공연에 대한 접근 권한이 없습니다.");
-//        }
-
-        //해당 회차의 모든 예약을 조회
-        List<Reservation> reservations=reservationRepository.findByShowTime(showTime);
-
-        //Dto에 이 코드를 넣는 것이 나을까...
-        return reservations.stream()
-                .flatMap(reservation -> reservation.getReservationItems().stream()
-                        .map(item -> {
-                            boolean reserved = item.getReservation().getStatus() == DomainEnums.ReservationStatus.CONFIRMED; //예약 확정에 대해서만 true
-                            String seatLabel = (item.getShowSeat() != null && item.getShowSeat().getSeat() != null)
-                                    ? item.getShowSeat().getSeat().getSeatNumber()
-                                    : null; //스탠딩일때 좌석 null 반환
-
-                            return ReservationSeatListResponse.builder()
-                                    .reservationItemId(item.getId())
-                                    .reservationId(item.getReservation().getId())
-                                    .userId(item.getReservation().getUser().getId())
-                                    .userName(item.getReservation().getUser().getName())
-                                    .phone(item.getReservation().getPhone())
-                                    .seat(seatLabel)
-                                    .ticketOptionId(item.getReservation().getTicketOption().getId())
-                                    .isEntered(item.isEntered())
-                                    .isReserved(reserved)
-                                    .reservationTime(item.getReservation().getCreatedAt())
-                                    .build();
-                        })
-                )
-                .collect(Collectors.toList());
-    }
-
     @Transactional
     public CheckinStatusUpdateResponse updateCheckinStatus(Long showId, Long showtimeId, CheckinStatusUpdateRequest request){
         KakaoOauth user=authUtil.getCurrentUser();
@@ -408,93 +360,6 @@ public class ShowService {
                 .build();
     }
 
-    //좌석별 조회
-    @Transactional(readOnly = true)
-    public CheckinResponse getReservationSeatList(Long showId, Long showtimeId, String keyword) {
-        KakaoOauth user = authUtil.getCurrentUser();
-        Manager manager = managerRepository.findByKakaoOauth(user)
-                .orElseThrow(() -> new IllegalArgumentException("해당 사용자의 매니저 정보를 찾을 수 없습니다."));
-
-        Shows show = showsRepository.findById(showId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 공연입니다."));
-
-        List<ShowTime> allShowTimes = show.getShowTimes().stream()
-                .sorted(Comparator.comparing(ShowTime::getStartAt))
-                .collect(Collectors.toList());
-
-        if (allShowTimes.isEmpty()) {
-            throw new IllegalArgumentException("해당 공연에 등록된 회차가 없습니다.");
-        }
-
-        ShowTime selectedShowTime;
-        if (showtimeId != null) {
-            selectedShowTime = allShowTimes.stream()
-                    .filter(st -> st.getId().equals(showtimeId))
-                    .findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회차 ID입니다: " + showtimeId));
-        } else {
-            selectedShowTime = allShowTimes.get(0);
-        }
-
-        // 예매 좌석 목록 조회
-        List<ReservationItem> reservationItems;
-        if (StringUtils.hasText(keyword)) {
-            reservationItems = reservationItemRepository.findReservationItemsByShowTimeAndKeyword(selectedShowTime, keyword);
-        } else {
-            reservationItems = reservationItemRepository.findReservationItemsByShowTime(selectedShowTime);
-        }
-
-        List<ReservationSeatListResponse> reservationList = reservationItems.stream()
-                .map(ri -> ReservationSeatListResponse.builder()
-                        .reservationItemId(ri.getId())
-                        .reservationId(ri.getReservation().getId())
-                        .userId(ri.getReservation().getUser().getId())
-                        .userName(ri.getReservation().getUser().getName())
-                        .phone(ri.getReservation().getPhone())
-                        .seat(ri.getShowSeat() != null ? ri.getShowSeat().getSeat().getSeatNumber() : null)
-                        .ticketOptionId(ri.getReservation().getTicketOption().getId())
-                        .isEntered(ri.isEntered())
-                        .isReserved(ri.getReservation() != null &&
-                                ri.getReservation().getStatus() != DomainEnums.ReservationStatus.CANCELED)
-                        .reservationTime(ri.getReservation().getCreatedAt())
-                        .build())
-                .collect(Collectors.toList());
-
-        // 좌석 배치도 생성
-        List<List<Object>> seatMap = null;
-        if (show.getSaleMethod() != DomainEnums.SaleMethod.STANDING) {
-            try {
-                LocationMap locationMap = locationMapRepository.findByLocationId(show.getLocation().getId())
-                        .orElseThrow(() -> new IllegalStateException("해당 공연장의 좌석 배치도 정보를 찾을 수 없습니다."));
-
-                int height = locationMap.getLayoutHeight();
-                int width = locationMap.getLayoutWidth();
-                seatMap = new ArrayList<>();
-                for (int i = 0; i < height; i++) {
-                    seatMap.add(new ArrayList<>(Collections.nCopies(width, 0)));
-                }
-
-                List<List<Integer>> stageCoords = objectMapper.readValue(locationMap.getStageCoordinates(), new TypeReference<>() {});
-                for (List<Integer> coord : stageCoords) {
-                    seatMap.get(coord.get(0)).set(coord.get(1), -1);
-                }
-
-                List<ShowSeat> showSeats = showSeatRepository.findByShowTime(selectedShowTime);
-                for (ShowSeat showSeat : showSeats) {
-                    Seat seat = showSeat.getSeat();
-                    seatMap.get(seat.getSeatRow()).set(seat.getSeatColumn(), seat.getSeatNumber());
-                }
-            } catch (IOException e) {
-                throw new RuntimeException("좌석 배치도 데이터를 처리하는 중 오류가 발생했습니다.", e);
-            }
-        }
-
-        return CheckinResponse.builder()
-                .seat(seatMap)
-                .reservation(reservationList)
-                .build();
-    }
-
     public ShowDraftResponse getPublishShow(Long showId){
         KakaoOauth user=authUtil.getCurrentUser();
         Manager manager=managerRepository.findByKakaoOauth(user)
@@ -588,19 +453,83 @@ public class ShowService {
         return new ShowUpdateResponse(show.getId(), show.getStatus().name());
     }
 
-    public CheckinListResponse getCheckinList(Long showId, Long showtimeId) {
-        CustomerListResponseDto customerData = searchReservationList(showId, showtimeId, null);
+    @Transactional(readOnly = true)
+    public CheckinResponse getCheckinList(Long showId, Long showtimeId) {
+        KakaoOauth user = authUtil.getCurrentUser();
+        Manager manager = managerRepository.findByKakaoOauth(user)
+                .orElseThrow(() -> new IllegalArgumentException("해당 사용자의 매니저 정보를 찾을 수 없습니다."));
 
-        List<CheckinShowTimeDto> checkinShowTimeList = customerData.getShowTimeList().stream()
-            .map(st -> new CheckinShowTimeDto(st.getShowTime(), st.getShowTimeId()))
-            .collect(Collectors.toList());
+        Shows show = showsRepository.findById(showId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 공연입니다."));
 
-        return new CheckinListResponse(
-            customerData.getShowTitle(),
-            checkinShowTimeList,
-            customerData.getSelectedShowTime(),
-            customerData.getSelectedShowTimeId(),
-            customerData.getReservationList()
-        );
+        List<ShowTime> allShowTimes = show.getShowTimes().stream()
+                .sorted(Comparator.comparing(ShowTime::getStartAt))
+                .collect(Collectors.toList());
+
+        if (allShowTimes.isEmpty()) {
+            throw new IllegalArgumentException("해당 공연에 등록된 회차가 없습니다.");
+        }
+
+        ShowTime selectedShowTime;
+        if (showtimeId != null) {
+            selectedShowTime = allShowTimes.stream()
+                    .filter(st -> st.getId().equals(showtimeId))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회차 ID입니다: " + showtimeId));
+        } else {
+            selectedShowTime = allShowTimes.get(0);
+        }
+
+        // 예매 좌석 목록 조회
+        List<ReservationItem> reservationItems = reservationItemRepository.findReservationItemsByShowTime(selectedShowTime);
+
+        List<CheckinReservationDto> reservationList = reservationItems.stream()
+                .map(CheckinReservationDto::fromEntity)
+                .collect(Collectors.toList());
+
+        // 좌석 배치도 생성
+        List<List<Object>> seatMap = null;
+        if (show.getSaleMethod() != DomainEnums.SaleMethod.STANDING && show.getSaleMethod() != DomainEnums.SaleMethod.EVENTHOST  ) {
+            try {
+                LocationMap locationMap = locationMapRepository.findByLocationId(show.getLocation().getId())
+                        .orElseThrow(() -> new IllegalStateException("해당 공연장의 좌석 배치도 정보를 찾을 수 없습니다."));
+
+                int height = locationMap.getLayoutHeight();
+                int width = locationMap.getLayoutWidth();
+                seatMap = new ArrayList<>();
+                for (int i = 0; i < height; i++) {
+                    seatMap.add(new ArrayList<>(Collections.nCopies(width, 0)));
+                }
+
+                List<List<Integer>> stageCoords = objectMapper.readValue(locationMap.getStageCoordinates(), new TypeReference<>() {});
+                for (List<Integer> coord : stageCoords) {
+                    seatMap.get(coord.get(0)).set(coord.get(1), -1);
+                }
+
+                List<ShowSeat> showSeats = showSeatRepository.findByShowTime(selectedShowTime);
+                for (ShowSeat showSeat : showSeats) {
+                    Seat seat = showSeat.getSeat();
+                    seatMap.get(seat.getSeatRow()).set(seat.getSeatColumn(), seat.getSeatNumber());
+                }
+            } catch (IOException e) {
+                throw new RuntimeException("좌석 배치도 데이터를 처리하는 중 오류가 발생했습니다.", e);
+            }
+        }
+
+        List<CheckinShowTimeDto> showTimeDtoList = allShowTimes.stream()
+                .map(CheckinShowTimeDto::fromEntity)
+                .collect(Collectors.toList());
+
+        return CheckinResponse.builder()
+                .showTitle(show.getTitle())
+                .showTimeList(showTimeDtoList)
+                .seat(seatMap)
+                .reservation(reservationList)
+                .build();
+    }
+
+    public CheckinResponse getReservationSeatList(Long showId, Long showtimeId, String keyword) {
+        // This method is now unused and will be commented out in the controller.
+        return null;
     }
 }
