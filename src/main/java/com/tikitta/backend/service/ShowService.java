@@ -480,16 +480,18 @@ public class ShowService {
             selectedShowTime = allShowTimes.get(0);
         }
 
-        // 예매 좌석 목록 조회
-        List<ReservationItem> reservationItems = reservationItemRepository.findReservationItemsByShowTime(selectedShowTime);
+        // 1. 회차에 해당하는 'Reservation' 목록을 먼저 조회
+        List<Reservation> reservations = reservationRepository.findByShowTime(selectedShowTime);
 
-        List<CheckinReservationDto> reservationList = reservationItems.stream()
+        // 2. 각 Reservation의 'ReservationItem'들을 하나의 리스트로 펼침
+        List<CheckinReservationDto> reservationList = reservations.stream()
+                .flatMap(reservation -> reservation.getReservationItems().stream())
                 .map(CheckinReservationDto::fromEntity)
                 .collect(Collectors.toList());
 
         // 좌석 배치도 생성
         List<List<Object>> seatMap = null;
-        if (show.getSaleMethod() != DomainEnums.SaleMethod.STANDING && show.getSaleMethod() != DomainEnums.SaleMethod.EVENTHOST  ) {
+        if (show.getSaleMethod() != DomainEnums.SaleMethod.STANDING) {
             try {
                 LocationMap locationMap = locationMapRepository.findByLocationId(show.getLocation().getId())
                         .orElseThrow(() -> new IllegalStateException("해당 공연장의 좌석 배치도 정보를 찾을 수 없습니다."));
@@ -523,6 +525,8 @@ public class ShowService {
         return CheckinResponse.builder()
                 .showTitle(show.getTitle())
                 .showTimeList(showTimeDtoList)
+                .selectedShowTime(selectedShowTime.getStartAt())
+                .selectedShowTimeId(selectedShowTime.getId())
                 .seat(seatMap)
                 .reservation(reservationList)
                 .build();
