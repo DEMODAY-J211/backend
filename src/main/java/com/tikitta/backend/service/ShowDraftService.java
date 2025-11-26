@@ -151,8 +151,8 @@ public class ShowDraftService {
                     .bookingEndAt(bookingEndAt)
                     .remainSeatCount(seatCount);
 
-            // 스탠딩일 때만 총수량을 빌더에 추가
-            if (draft.getSaleMethod() == DomainEnums.SaleMethod.STANDING) {
+            // 스탠딩 또는 주최자 배정일 때만 총수량을 빌더에 추가
+            if (draft.getSaleMethod() == DomainEnums.SaleMethod.STANDING || draft.getSaleMethod() == DomainEnums.SaleMethod.EVENTHOST) {
                 builder.totalStandingQuantity(seatCount);
             }
 
@@ -216,7 +216,7 @@ public class ShowDraftService {
         vaildateShowForPublishing(draft);
 
         // --- 좌석 복제 로직 ---
-        if (draft.getSaleMethod() != DomainEnums.SaleMethod.STANDING) {
+        if (draft.getSaleMethod() != DomainEnums.SaleMethod.STANDING && draft.getSaleMethod() != DomainEnums.SaleMethod.EVENTHOST) {
             cloneSeatsForAllShowTimes(draft);
         }
         
@@ -265,15 +265,16 @@ public class ShowDraftService {
             throw new IllegalStateException("공연 회차를 1개 이상 등록해야 합니다.");
 
         // 좌석 판매 방식에 따른 유효성 검사
-        if (draft.getSaleMethod() != DomainEnums.SaleMethod.STANDING) {
+        DomainEnums.SaleMethod saleMethod = draft.getSaleMethod();
+        if (saleMethod == DomainEnums.SaleMethod.STANDING || saleMethod == DomainEnums.SaleMethod.EVENTHOST) {
+            // 스탠딩 또는 주최자 배정 수량 검증
+            if (draft.getSeatCount() == null || draft.getSeatCount() <= 0) {
+                throw new IllegalStateException("스탠딩 또는 주최자 배정 공연의 총 수량을 입력해야 합니다.");
+            }
+        } else { // SCHEDULING or SELECTBYUSER
             // 좌석제 공연이라면 임시 ShowSeat(템플릿)가 존재해야 한다.
             if (!showSeatRepository.existsBySeat_Location_IdAndShowTimeIsNull(draft.getLocation().getId())) {
                 throw new IllegalStateException("좌석제 공연이지만 좌석 정보가 생성되지 않았습니다.");
-            }
-        } else {
-            // 스탠딩 수량 검증
-            if (draft.getSeatCount() == null || draft.getSeatCount() <= 0) {
-                throw new IllegalStateException("스탠딩 공연의 총 수량을 입력해야 합니다.");
             }
         }
 
