@@ -70,11 +70,10 @@ public class NotificationBatchService {
                     // 4. 메시지 가공
                     String formattedMessage = SmsUtil.formatMessage(template, reservation);
                     
-                    // 5. QR코드 URL 추가 (첫 번째 예매 항목의 QR코드를 기준으로 함)
-                    String qrUrl = reservation.getReservationItems().stream()
-                            .map(item -> frontendUrl + "/qr?code=" + item.getQrCodeUrl())
-                            .findFirst()
-                            .orElse("QR코드 정보 없음");
+                    // 5. QR코드 URL 추가
+                    Long managerId = reservation.getShowTime().getShow().getManager().getId();
+                    Long reservationId = reservation.getId();
+                    String qrUrl = String.format("%s/%d/mobileticket/%d", frontendUrl, managerId, reservationId);
                     
                     String finalMessage = formattedMessage + "\n\n" + "입장 QR코드 확인: " + qrUrl;
                     String subject = "[티킷타] 공연 안내";
