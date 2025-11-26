@@ -30,9 +30,14 @@ public class ManagerIdSaveFilter implements Filter {
 
         // 정규식과 일치하는 경우 (예: /user/1/main, /user/12/booking)
         if (matcher.matches()) {
-            String managerId = matcher.group(1); // 캡처된 숫자(managerId)
-            HttpSession session = httpRequest.getSession(true); // 세션이 없으면 생성
-            session.setAttribute("LAST_VISITED_MANAGER_ID", managerId);
+            // false로 변경하여 불필요한 세션 생성을 방지
+            HttpSession session = httpRequest.getSession(false);
+
+            // 세션이 이미 존재할 경우에만 managerId를 저장
+            if (session != null) {
+                String managerId = matcher.group(1); // 캡처된 숫자(managerId)
+                session.setAttribute("LAST_VISITED_MANAGER_ID", managerId);
+            }
         }
 
         chain.doFilter(request, response);
