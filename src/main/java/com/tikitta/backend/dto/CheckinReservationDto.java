@@ -1,5 +1,6 @@
 package com.tikitta.backend.dto;
 
+import com.tikitta.backend.domain.DomainEnums;
 import com.tikitta.backend.domain.ReservationItem;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,12 +31,12 @@ public class CheckinReservationDto {
                 .reservationId(item.getReservation().getId())
                 .userId(item.getReservation().getUser().getId())
                 .userName(item.getReservation().getUser().getName())
-                .phone(item.getReservation().getUser().getPhoneNumber())
-                .seat(item.getSeat().getName())
-                .ticketOptionId(item.getTicketOption().getId())
-                .isEntered(item.getIsEntered())
-                .isReserved(item.getReservation().getStatus() == com.tikitta.backend.domain.DomainEnums.ReservationStatus.CONFIRMED)
-                .reservationTime(item.getReservation().getReservationTime())
+                .phone(item.getReservation().getPhone())
+                .seat(item.getShowSeat() != null ? item.getShowSeat().getSeat().getSeatNumber() : null)
+                .ticketOptionId(item.getReservation().getTicketOption().getId())
+                .isEntered(item.isEntered())
+                .isReserved(item.getReservation().getStatus() == DomainEnums.ReservationStatus.CONFIRMED)
+                .reservationTime(item.getReservation().getCreatedAt())
                 .build();
     }
 }
