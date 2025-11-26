@@ -4,11 +4,6 @@ import com.tikitta.backend.domain.KakaoOauth;
 import com.tikitta.backend.domain.Manager;
 import com.tikitta.backend.dto.*;
 import com.tikitta.backend.dto.ApiResponse;
-import com.tikitta.backend.dto.CustomerListResponseDto;
-import com.tikitta.backend.dto.MyShowListResponseDto;
-import com.tikitta.backend.dto.QrReadResponseDto;
-import com.tikitta.backend.dto.ReservationStatusUpdateRequest;
-import com.tikitta.backend.dto.ReservationStatusUpdateResponse;
 import com.tikitta.backend.repository.KakaoOauthRepository;
 import com.tikitta.backend.repository.ManagerRepository;
 import com.tikitta.backend.service.CheckInService;
@@ -148,11 +143,11 @@ public class ManagerController {
     //좌석별 조회
     @GetMapping("/shows/{showId}/checkin")
     @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<ApiResponse<List<ReservationSeatListResponse>>> getShowSeats(
+    public ResponseEntity<ApiResponse<CheckinListResponse>> getShowSeats(
             @PathVariable Long showId,
-            @RequestParam Long showtimeId){
-        List<ReservationSeatListResponse> seatList = showService.getReservationSeatList(showtimeId);
-        return ResponseEntity.ok(new ApiResponse<>(seatList));
+            @RequestParam(required = false) Long showtimeId){
+        CheckinListResponse response = showService.getCheckinList(showId, showtimeId);
+        return ResponseEntity.ok(new ApiResponse<>(response));
     }
 
     //좌석별 상태 수정

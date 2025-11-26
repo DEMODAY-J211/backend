@@ -284,8 +284,7 @@ public class ShowService {
         //해당 회차의 모든 예약을 조회
         List<Reservation> reservations=reservationRepository.findByShowTime(showTime);
 
-        //Dto 변환
-        /*Dto에 이 코드를 넣는 것이 나을까...*/
+        //Dto에 이 코드를 넣는 것이 나을까...
         return reservations.stream()
                 .flatMap(reservation -> reservation.getReservationItems().stream()
                         .map(item -> {
@@ -589,6 +588,19 @@ public class ShowService {
         return new ShowUpdateResponse(show.getId(), show.getStatus().name());
     }
 
+    public CheckinListResponse getCheckinList(Long showId, Long showtimeId) {
+        CustomerListResponseDto customerData = searchReservationList(showId, showtimeId, null);
 
+        List<CheckinShowTimeDto> checkinShowTimeList = customerData.getShowTimeList().stream()
+            .map(st -> new CheckinShowTimeDto(st.getShowTime(), st.getShowTimeId()))
+            .collect(Collectors.toList());
 
+        return new CheckinListResponse(
+            customerData.getShowTitle(),
+            checkinShowTimeList,
+            customerData.getSelectedShowTime(),
+            customerData.getSelectedShowTimeId(),
+            customerData.getReservationList()
+        );
+    }
 }
