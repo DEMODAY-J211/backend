@@ -76,7 +76,7 @@ public class AuthService {
         kakaoOauthRepository.save(kakaoOauth);
 
         // 2. 현재 세션의 권한을 ROLE_MANAGER로 즉시 갱신
-        updateUserRoleAndSession("MANAGER");
+        updateUserRoleandSession("MANAGER");
     }
 
     public void updateUserRoleandSession(String role){
