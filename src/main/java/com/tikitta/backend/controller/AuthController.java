@@ -94,7 +94,7 @@ public class AuthController {
     @PatchMapping("/update-role")
     public ResponseEntity<String> updateRole(@RequestBody Map<String, String> request){
         String role= request.get("role");
-        authService.updateUserRoleandSession(role);
+        authService.updateUserRoleAndSession(role);
         return ResponseEntity.ok("Role updated to " + role.toUpperCase() );
     }
 

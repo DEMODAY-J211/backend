@@ -76,13 +76,13 @@ public class AuthService {
         kakaoOauthRepository.save(kakaoOauth);
 
         // 2. 현재 세션의 권한을 ROLE_MANAGER로 즉시 갱신
-        updateUserRoleandSession("MANAGER");
+        updateUserRoleAndSession("MANAGER");
     }
 
-    public void updateUserRoleandSession(String role){
+    public void updateUserRoleAndSession(String role) {
         KakaoOauth currentUser = authUtil.getCurrentUser();
 
-        if(!"USER".equalsIgnoreCase(role)&& !"MANAGER".equalsIgnoreCase(role)) {
+        if (!"USER".equalsIgnoreCase(role) && !"MANAGER".equalsIgnoreCase(role)) {
             throw new IllegalArgumentException("Invalid role: " + role);
         }
 
@@ -91,17 +91,17 @@ public class AuthService {
         kakaoOauthRepository.save(currentUser);
 
         // 2️⃣ SecurityContext 즉시 갱신
+        Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
+        OAuth2User oAuth2User = (OAuth2User) currentAuth.getPrincipal();
+
         var authorities = Collections.singletonList(
                 new SimpleGrantedAuthority("ROLE_" + currentUser.getRole().name())
         );
 
-        Map<String, Object> attributes = Map.of(
-                "email", currentUser.getEmail(),
-                "name", currentUser.getName()
-        );
+        // 원래 attributes를 그대로 사용하고, 권한만 새로 부여
+        OAuth2User newPrincipal = new DefaultOAuth2User(authorities, oAuth2User.getAttributes(), "id");
+        Authentication newAuth = new OAuth2AuthenticationToken(newPrincipal, authorities, ((OAuth2AuthenticationToken) currentAuth).getAuthorizedClientRegistrationId());
 
-        OAuth2User principal = new DefaultOAuth2User(authorities, attributes, "email");
-        Authentication newAuth = new OAuth2AuthenticationToken(principal, authorities, "kakao");
         SecurityContextHolder.getContext().setAuthentication(newAuth);
     }
 }
