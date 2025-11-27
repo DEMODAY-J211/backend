@@ -14,6 +14,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -73,7 +74,20 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
         }
 
         clearAuthenticationAttributes(request);
-        getRedirectStrategy().sendRedirect(request, response, targetUrl);
+        // getRedirectStrategy().sendRedirect(request, response, targetUrl);
+
+        // 진단용 코드: 리디렉션 대신 수동으로 이동할 수 있는 페이지 제공
+        response.setContentType("text/html;charset=UTF-8");
+        PrintWriter out = response.getWriter();
+        out.println("<html>");
+        out.println("<head><title>로그인 성공</title></head>");
+        out.println("<body>");
+        out.println("<h1>로그인에 성공했습니다.</h1>");
+        out.println("<p>아래 링크를 클릭하여 서비스로 이동해주세요.</p>");
+        out.println("<a href=\"" + targetUrl + "\">서비스로 이동하기</a>");
+        out.println("</body>");
+        out.println("</html>");
+        out.flush();
     }
 
     private String getTargetUrlFromSession(HttpSession session) {
