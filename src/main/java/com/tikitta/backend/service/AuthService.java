@@ -70,6 +70,13 @@ public class AuthService {
 
             managerRepository.save(manager);
         }
+        
+        // 1. DB에서 사용자의 Role을 MANAGER로 설정
+        kakaoOauth.setRole(DomainEnums.Role.MANAGER);
+        kakaoOauthRepository.save(kakaoOauth);
+
+        // 2. 현재 세션의 권한을 ROLE_MANAGER로 즉시 갱신
+        updateUserRoleAndSession("MANAGER");
     }
 
     public void updateUserRoleandSession(String role){
