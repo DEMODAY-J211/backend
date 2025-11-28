@@ -26,6 +26,7 @@ public class ReservationDetailResponse {
     private Integer totalAmount; // JSON 키 오타 수정 (totalAmount -> totalPrice)
     private RefundInfo refundInfo;
     private DomainEnums.SaleMethod saleMethod;
+    private Long showTimeId;
 
     public ReservationDetailResponse(Reservation reservation) {
         ShowTime showTime = reservation.getShowTime();
@@ -45,6 +46,7 @@ public class ReservationDetailResponse {
         this.reservationstatus = reservation.getStatus();
         this.totalAmount = reservation.getTotalPrice(); // 필드 이름 totalPrice 사용
         this.saleMethod = show.getSaleMethod();
+        this.showTimeId = showTime.getId();
 
         // 예매 시 사용된 TicketOption 정보 설정
         if (selectedTicketOption != null) {
